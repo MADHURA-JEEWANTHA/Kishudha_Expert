@@ -26,12 +26,12 @@ jobs:
 
     - name: Build EXE
       run: |
-        pyinstaller --onefile --windowed --icon=icon.ico ^
-        --add-data "templates;templates" ^
-        --add-data "static;static" ^
-        --add-data "inventory.db;." ^
-        --add-data "database.db;." ^
-        --add-data "users.json;." ^
+        pyinstaller --onefile --windowed --icon=icon.ico `
+        --add-data "templates;templates" `
+        --add-data "static;static" `
+        --add-data "inventory.db;." `
+        --add-data "database.db;." `
+        --add-data "users.json;." `
         start.py
 
     - name: Upload EXE
