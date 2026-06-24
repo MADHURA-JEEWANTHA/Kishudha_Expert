@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+
+{% block title %}Send Stock{% endblock %}
+
+{% block page_title %}Send Stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header Card -->
+    <div class="card-modern fade-in-up mb-4">
+        <div class="card-header-modern">
+            <div>
+                <h5 class="mb-0"><i class="fas fa-paper-plane me-2" style="color: var(--primary);"></i>Multiple Stock Send</h5>
+                <p class="text-muted small mt-1 mb-0">Send stock items to customers or transfers</p>
+            </div>
+            <a href="/stock" class="btn-outline-custom btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Stock
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="card-modern fade-in-up delay-1">
+        <div class="card-body p-4">
+            <form method="POST" action="/save_send_stock" id="sendStockForm">
+                <div class="table-responsive">
+                    <table class="table-modern" id="stockTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Item</th>
+                                <th>Price Update</th>
+                                <th>Available Stock</th>
+                                <th>Price Details</th>
+                                <th>Quantity to Send</th>
+                                <th style="width: 60px">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody">
+                            <!-- Template Row -->
+                            <tr class="stock-row" data-invalid="0">
+                                <td>
+                                    <select name="category_id[]" class="form-select-modern category" required>
+                                        <option value="">-- Select Category --</option>
+                                        {% for c in Categorys %}
+                                        <option value="{{ c.Id }}">{{ c.Cat_Name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="item_id[]" class="form-select-modern item" required disabled>
+                                        <option value="">-- First Select Category --</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="price_update_id[]" class="form-select-modern priceUpdate" required>
+                                        <option value="">-- Select Price Update --</option>
+                                        {% for p in PriceUpdates %}
+                                        <option value="{{ p.Id }}">{{ p.Date }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <div class="stock-badge">
+                                        <span class="badge-info stockQty">0</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="price-details">
+                                        <span class="price-tag"><i class="fas fa-tag"></i> Net: <span class="netPrice">-</span></span>
+                                        <span class="price-tag"><i class="fas fa-rupee-sign"></i> Sell: <span class="sellPrice">-</span></span>
+                                        <span class="price-tag"><i class="fas fa-chart-line"></i> MRP: <span class="mrpPrice">-</span></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" name="qty[]" class="form-control-modern qty-input" placeholder="Qty" min="1" step="1" required disabled>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn-remove remove" title="Remove Row">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-3 mt-4 pt-3 border-top">
+                    <button type="button" class="btn-primary-custom" id="addRowBtn">
+                        <i class="fas fa-plus-circle"></i> Add New Row
+                    </button>
+                    <button type="submit" class="btn-primary-custom" style="background: linear-gradient(135deg, var(--success), #059669);" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Send Stock
+                    </button>
+                    <button type="reset" class="btn-outline-custom" onclick="resetAllRows()">
+                        <i class="fas fa-undo-alt"></i> Reset All
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Additional styles specific to send_stock */
+    .price-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+    }
+
+    .price-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--gray-bg);
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .price-tag i {
+        font-size: 10px;
+        color: var(--primary);
+    }
+
+    .stock-badge .badge-info {
+        background: linear-gradient(135deg, var(--info), #2563eb);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-block;
+    }
+
+    .stock-row.invalid {
+        background: linear-gradient(90deg, #fef2f2, #fee2e2);
+        border-left: 3px solid var(--danger);
+    }
+
+    .stock-row.invalid .price-tag {
+        background: #fee2e2;
+    }
+
+    .btn-remove {
+        background: none;
+        border: none;
+        color: var(--gray);
+        font-size: 18px;
+        cursor: pointer;
+        transition: var(--transition);
+        padding: 8px;
+        border-radius: 8px;
+    }
+
+    .btn-remove:hover {
+        color: var(--danger);
+        background: #fee2e2;
+    }
+
+    .qty-input:disabled {
+        background: var(--gray-bg);
+        cursor: not-allowed;
+    }
+
+    .form-select-modern:disabled {
+        background: var(--gray-bg);
+        cursor: not-allowed;
+    }
+
+    .table-modern td {
+        vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+        .price-details {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        .price-tag {
+            font-size: 10px;
+        }
+    }
+</style>
+
+<script>
+    // Clone template row function
+    function getTemplateRow() {
+        const tbody = document.getElementById('tbody');
+        const templateRow = tbody.querySelector('.stock-row');
+        const newRow = templateRow.cloneNode(true);
+        
+        // Reset all values
+        newRow.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
+            if (select.classList.contains('item')) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">-- First Select Category --</option>';
+            }
+        });
+        
+        newRow.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            if (input.classList.contains('qty-input')) {
+                input.disabled = true;
+            }
+        });
+        
+        newRow.querySelector('.netPrice').innerText = '-';
+        newRow.querySelector('.sellPrice').innerText = '-';
+        newRow.querySelector('.mrpPrice').innerText = '-';
+        newRow.querySelector('.stockQty').innerText = '0';
+        
+        newRow.classList.remove('invalid');
+        newRow.setAttribute('data-invalid', '0');
+        
+        return newRow;
+    }
+
+    // Add new row
+    function addRow() {
+        const tbody = document.getElementById('tbody');
+        const newRow = getTemplateRow();
+        tbody.appendChild(newRow);
+        showToast('New row added', 'info', 'Ready');
+    }
+
+    // Reset all rows to first row only
+    function resetAllRows() {
+        const tbody = document.getElementById('tbody');
+        const rows = tbody.querySelectorAll('.stock-row');
+        
+        for (let i = rows.length - 1; i > 0; i--) {
+            rows[i].remove();
+        }
+        
+        // Reset first row
+        const firstRow = rows[0];
+        firstRow.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
+            if (select.classList.contains('item')) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">-- First Select Category --</option>';
+            }
+        });
+        firstRow.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            input.disabled = true;
+        });
+        firstRow.querySelector('.netPrice').innerText = '-';
+        firstRow.querySelector('.sellPrice').innerText = '-';
+        firstRow.querySelector('.mrpPrice').innerText = '-';
+        firstRow.querySelector('.stockQty').innerText = '0';
+        firstRow.classList.remove('invalid');
+        firstRow.setAttribute('data-invalid', '0');
+        
+        showToast('All rows reset', 'info', 'Form cleared');
+    }
+
+    // Load items based on category
+    async function loadItems(categorySelect, itemSelect) {
+        const categoryId = categorySelect.value;
+        
+        if (!categoryId) {
+            itemSelect.disabled = true;
+            itemSelect.innerHTML = '<option value="">-- First Select Category --</option>';
+            return;
+        }
+        
+        itemSelect.disabled = true;
+        itemSelect.innerHTML = '<option value="">Loading...</option>';
+        
+        try {
+            const response = await fetch(`/get_items/${categoryId}`);
+            const items = await response.json();
+            
+            itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+            items.forEach(item => {
+                itemSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+            });
+            itemSelect.disabled = false;
+        } catch (error) {
+            console.error('Error loading items:', error);
+            itemSelect.innerHTML = '<option value="">Error loading items</option>';
+            showToast('Failed to load items', 'error');
+        }
+    }
+
+    // Load price and stock information
+    async function loadPriceAndStock(row) {
+        const itemSelect = row.querySelector('.item');
+        const priceUpdateSelect = row.querySelector('.priceUpdate');
+        const itemId = itemSelect.value;
+        const updateId = priceUpdateSelect.value;
+        
+        const netSpan = row.querySelector('.netPrice');
+        const sellSpan = row.querySelector('.sellPrice');
+        const mrpSpan = row.querySelector('.mrpPrice');
+        const stockSpan = row.querySelector('.stockQty');
+        const qtyInput = row.querySelector('.qty-input');
+        
+        if (!itemId || !updateId) {
+            netSpan.innerText = '-';
+            sellSpan.innerText = '-';
+            mrpSpan.innerText = '-';
+            stockSpan.innerText = '0';
+            qtyInput.disabled = true;
+            qtyInput.value = '';
+            row.classList.remove('invalid');
+            row.setAttribute('data-invalid', '0');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/get_send_multi_price/${itemId}/${updateId}`);
+            const data = await response.json();
+            
+            if (!data.status || data.net == null || data.sell == null || data.mrp == null) {
+                netSpan.innerText = 'N/A';
+                sellSpan.innerText = 'N/A';
+                mrpSpan.innerText = 'N/A';
+                stockSpan.innerText = '0';
+                qtyInput.disabled = true;
+                qtyInput.value = '';
+                row.classList.add('invalid');
+                row.setAttribute('data-invalid', '1');
+                showToast('Price information not available for selected combination', 'warning');
+                return;
+            }
+            
+            netSpan.innerText = parseFloat(data.net).toLocaleString();
+            sellSpan.innerText = parseFloat(data.sell).toLocaleString();
+            mrpSpan.innerText = parseFloat(data.mrp).toLocaleString();
+            stockSpan.innerText = data.stok || 0;
+            
+            qtyInput.disabled = false;
+            qtyInput.max = data.stok || 0;
+            qtyInput.placeholder = `Max: ${data.stok || 0}`;
+            
+            row.classList.remove('invalid');
+            row.setAttribute('data-invalid', '0');
+            
+        } catch (error) {
+            console.error('Error loading price:', error);
+            netSpan.innerText = 'Error';
+            sellSpan.innerText = 'Error';
+            mrpSpan.innerText = 'Error';
+            stockSpan.innerText = '0';
+            qtyInput.disabled = true;
+            row.classList.add('invalid');
+            row.setAttribute('data-invalid', '1');
+        }
+    }
+
+    // Validate quantity before submit
+    function validateRow(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const stockSpan = row.querySelector('.stockQty');
+        const qty = parseInt(qtyInput.value);
+        const availableStock = parseInt(stockSpan.innerText);
+        
+        if (!qtyInput.disabled && qty > 0) {
+            if (qty > availableStock) {
+                showToast(`Quantity (${qty}) exceeds available stock (${availableStock})`, 'error');
+                qtyInput.classList.add('is-invalid');
+                return false;
+            }
+            qtyInput.classList.remove('is-invalid');
+            return true;
+        }
+        
+        if (!qtyInput.disabled && (!qty || qty <= 0)) {
+            showToast('Please enter a valid quantity', 'warning');
+            qtyInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        return !qtyInput.disabled && qty > 0;
+    }
+
+    // Event Delegation for dynamic rows
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Category change event
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('category')) {
+                const row = e.target.closest('.stock-row');
+                const itemSelect = row.querySelector('.item');
+                loadItems(e.target, itemSelect);
+                
+                // Reset price and stock display
+                row.querySelector('.netPrice').innerText = '-';
+                row.querySelector('.sellPrice').innerText = '-';
+                row.querySelector('.mrpPrice').innerText = '-';
+                row.querySelector('.stockQty').innerText = '0';
+                const qtyInput = row.querySelector('.qty-input');
+                qtyInput.disabled = true;
+                qtyInput.value = '';
+                row.classList.remove('invalid');
+                row.setAttribute('data-invalid', '0');
+            }
+            
+            if (e.target.classList.contains('item') || e.target.classList.contains('priceUpdate')) {
+                const row = e.target.closest('.stock-row');
+                loadPriceAndStock(row);
+            }
+        });
+        
+        // Remove row event
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.remove')) {
+                const rows = document.querySelectorAll('#tbody .stock-row');
+                if (rows.length > 1) {
+                    e.target.closest('.stock-row').remove();
+                    showToast('Row removed', 'info');
+                } else {
+                    showToast('Cannot remove the last row', 'warning');
+                }
+            }
+        });
+        
+        // Add row button
+        document.getElementById('addRowBtn').addEventListener('click', function() {
+            addRow();
+        });
+        
+        // Form validation before submit
+        document.getElementById('sendStockForm').addEventListener('submit', function(e) {
+            const rows = document.querySelectorAll('#tbody .stock-row');
+            let validRows = 0;
+            let invalidRows = 0;
+            
+            rows.forEach(row => {
+                if (validateRow(row)) {
+                    validRows++;
+                } else if (row.querySelector('.qty-input').value && !row.querySelector('.qty-input').disabled) {
+                    invalidRows++;
+                }
+            });
+            
+            if (validRows === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No Valid Entries',
+                    text: 'Please add at least one valid stock send entry with quantity',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            if (invalidRows > 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Rows Found',
+                    text: `${invalidRows} row(s) have issues. Please fix them before submitting.`,
+                    confirmButtonColor: '#6366f1'
+                });
+            }
+        });
+        
+        // Quantity input validation on change
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('qty-input')) {
+                const row = e.target.closest('.stock-row');
+                validateRow(row);
+            }
+        });
+        
+        // Initial setup for first row
+        const firstRow = document.querySelector('#tbody .stock-row');
+        if (firstRow) {
+            const firstCategory = firstRow.querySelector('.category');
+            const firstItem = firstRow.querySelector('.item');
+            if (firstCategory.value) {
+                loadItems(firstCategory, firstItem);
+            }
+        }
+    });
+</script>
+{% endblock %}

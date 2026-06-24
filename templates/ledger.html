@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}Ledger - {{ customer.name }}{% endblock %}
+
+{% block page_title %}Customer Ledger{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Customer Profile Card -->
+    <div class="card-modern fade-in-up mb-4">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-user-circle me-2" style="color: var(--primary);"></i>
+                Customer Details
+            </h5>
+            <a href="{{ url_for('customers') }}" class="btn-outline-custom btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to Customers
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="customer-avatar" style="width: 65px; height: 65px; font-size: 28px;">
+                            {{ customer.name[0].upper() if customer.name else '?' }}
+                        </div>
+                        <div>
+                            <h3 class="mb-1">{{ customer.name }}</h3>
+                            {% if customer.store_name %}
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-store me-1"></i> {{ customer.store_name }}
+                            </p>
+                            {% endif %}
+                            <div class="d-flex flex-wrap gap-3 mt-2">
+                                {% if customer.phone1 %}
+                                <small class="text-muted">
+                                    <i class="fas fa-phone-alt me-1"></i> {{ customer.phone1 }}
+                                </small>
+                                {% endif %}
+                                {% if customer.phone2 %}
+                                <small class="text-muted">
+                                    <i class="fas fa-phone-alt me-1"></i> {{ customer.phone2 }}
+                                </small>
+                                {% endif %}
+                                {% if customer.address %}
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i> {{ customer.address }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="balance-card">
+                        <small class="text-muted text-uppercase">Current Balance</small>
+                        <h2 class="mb-0 {% if data and data[-1].balance < 0 %}text-danger{% else %}text-primary{% endif %}">
+                            Rs. {{ (data[-1].balance if data else 0) | currency }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-1">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Credit</span>
+                        <h3 class="mb-0 text-success mt-1">Rs. {{ total_credit | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Total invoice amount</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Debit</span>
+                        <h3 class="mb-0 text-danger mt-1">Rs. {{ total_debit | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Total payments received</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Net Balance</span>
+                        <h3 class="mb-0 mt-1" style="color: var(--primary);">Rs. {{ (data[-1].balance if data else 0) | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, var(--primary), var(--primary-light));">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Credit - Debit</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Transactions Button (Conditional) -->
+    {% if show_clear_button %}
+    <div class="card-modern fade-in-up delay-4 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <i class="fas fa-exclamation-triangle me-2" style="color: var(--warning);"></i>
+                    <strong>Clear All Transactions</strong>
+                    <p class="text-muted small mb-0 mt-1">This will permanently delete ALL transactions for this customer</p>
+                </div>
+                <button class="btn-danger-custom" id="clearTransactionsBtn" 
+                        data-customer-id="{{ customer.id }}"
+                        data-customer-name="{{ customer.name }}"
+                        data-transaction-count="{{ data|length }}">
+                    <i class="fas fa-trash-alt"></i> Clear All Transactions
+                </button>
+            </div>
+        </div>
+    </div>
+    {% elif data and data|length > 0 %}
+    <div class="alert alert-warning fade-in-up delay-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Cannot clear transactions!</strong> This customer has pending credits or overpayment. 
+        Please settle all outstanding amounts first.
+    </div>
+    {% endif %}
+
+    <!-- Transactions Table -->
+    <div class="card-modern fade-in-up">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-history me-2"></i>
+                Transaction History
+            </h5>
+            <span class="badge-info">
+                <i class="fas fa-chart-line"></i> {{ data|length }} Records
+            </span>
+        </div>
+        <div class="card-body p-0">
+            {% if data %}
+            <div class="ledger-table-container">
+                <table class="table-modern ledger-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Reference</th>
+                            <th>Note</th>
+                            <th>Running Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr class="ledger-row">
+                            <td class="fw-medium">{{ row.t.date }}</td>
+                            <td>
+                                {% if row.t.type == 'credit' %}
+                                <span class="badge-success">
+                                    <i class="fas fa-file-invoice"></i> Credit
+                                </span>
+                                {% else %}
+                                <span class="badge-danger">
+                                    <i class="fas fa-money-bill-wave"></i> Debit
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-semibold">
+                                {% if row.t.type == 'credit' %}
+                                <span class="text-success">
+                                    + Rs. {{ row.t.amount | currency }}
+                                </span>
+                                {% else %}
+                                <span class="text-danger">
+                                    - Rs. {{ row.t.amount | currency }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.t.payment_method %}
+                                <span class="badge-info">
+                                    <i class="fas fa-credit-card"></i> {{ row.t.payment_method }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small">{{ row.t.payment_reference or '—' }}</code>
+                            </td>
+                            <td class="text-muted small">
+                                {{ row.t.note|truncate(30) or '—' }}
+                            </td>
+                            <td class="fw-bold">
+                                {% if row.balance >= 0 %}
+                                <span class="text-primary">Rs. {{ row.balance | currency }}</span>
+                                {% else %}
+                                <span class="text-danger">Rs. {{ row.balance | currency }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-receipt fa-4x mb-3" style="color: var(--gray-light);"></i>
+                    <h5 class="text-muted">No transactions found</h5>
+                    <p class="text-muted small">This customer has no records yet</p>
+                    <a href="{{ url_for('add_transaction') }}?customer={{ customer.id }}" class="btn-primary-custom mt-2">
+                        <i class="fas fa-plus-circle"></i> Add First Transaction
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Ledger Specific Styles */
+    .balance-card {
+        background: linear-gradient(135deg, var(--gray-bg), white);
+        border-radius: 20px;
+        padding: 16px 24px;
+        display: inline-block;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .ledger-table-container {
+        max-height: 500px;
+        overflow: auto;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .ledger-table {
+        width: 100%;
+    }
+    
+    .ledger-table th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        z-index: 10;
+    }
+    
+    .ledger-row {
+        transition: var(--transition);
+    }
+    
+    .ledger-row:hover {
+        background: var(--gray-bg);
+    }
+    
+    .btn-danger-custom {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        transition: var(--transition);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    
+    .btn-danger-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+        color: white;
+    }
+    
+    .ledger-table td,
+    .ledger-table th {
+        padding: 12px 16px;
+        vertical-align: middle;
+    }
+    
+    code {
+        background: var(--gray-bg);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+    }
+    
+    .empty-state {
+        padding: 60px 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .ledger-table td,
+        .ledger-table th {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        
+        .balance-card {
+            padding: 12px 16px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .balance-card h2 {
+            font-size: 24px;
+        }
+        
+        .btn-danger-custom {
+            padding: 10px 18px;
+            font-size: 12px;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const clearBtn = document.getElementById('clearTransactionsBtn');
+        
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                const customerId = this.getAttribute('data-customer-id');
+                const customerName = this.getAttribute('data-customer-name');
+                const totalTransactions = this.getAttribute('data-transaction-count');
+                
+                Swal.fire({
+                    title: '⚠️ Clear All Transactions?',
+                    html: `
+                        <div style="text-align: left;">
+                            <div class="alert alert-danger mb-3">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>WARNING:</strong> This action cannot be undone!
+                            </div>
+                            <p><strong><i class="fas fa-user"></i> Customer:</strong> ${escapeHtml(customerName)}</p>
+                            <p><strong><i class="fas fa-list"></i> Total Transactions:</strong> ${totalTransactions}</p>
+                            <hr>
+                            <p class="text-danger mb-2"><strong>⚠️ This will delete:</strong></p>
+                            <ul style="text-align: left;">
+                                <li>All credit invoices</li>
+                                <li>All payment records</li>
+                                <li>All settlement records</li>
+                                <li>Customer balance will be reset to zero</li>
+                            </ul>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, delete all transactions',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading
+                        Swal.fire({
+                            title: 'Deleting Transactions...',
+                            text: `Please wait while we clear all transactions for ${customerName}`,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        // Send delete request
+                        fetch(`/clear_customer_transactions/${customerId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: data.message,
+                                    icon: 'success',
+                                    confirmButtonColor: '#10b981',
+                                    timer: 2000,
+                                    showConfirmButton: true
+                                }).then(() => {
+                                    window.location.href = '/customers';
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message,
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc2626'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'An error occurred: ' + error.message,
+                                icon: 'error',
+                                confirmButtonColor: '#dc2626'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+    });
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Running balance hover effect
+    document.querySelectorAll('.ledger-row td:last-child').forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s';
+        });
+        cell.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+</script>
+{% endblock %}

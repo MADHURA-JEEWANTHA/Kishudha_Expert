@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Price Update Management{% endblock %}
+
+{% block page_title %}Price Updates{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex flex-wrap flex-md-nowrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-calendar-alt me-2" style="color: var(--primary);"></i>
+                Price Update Management
+            </h4>
+            <p class="text-muted small mb-0">Create and manage price update periods</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT COLUMN - Add New Price Update -->
+        <div class="col-lg-4">
+            <div class="card-modern fade-in-up">
+                <div class="card-header-modern">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2" style="color: var(--primary);"></i>
+                        Add Price Update
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Illustration -->
+                    <div class="text-center mb-4">
+                        <div class="price-update-illustration">
+                            <i class="fas fa-tags fa-4x" style="color: var(--primary-light);"></i>
+                        </div>
+                        <p class="text-muted small mt-2">Create a new price update period</p>
+                    </div>
+                    
+                    <form action="/PriceUpdate" method="POST" id="addPriceUpdateForm">
+                        <div class="mb-4">
+                            <label class="form-label-custom">
+                                <i class="fas fa-calendar-day me-1"></i> Price Update Date
+                            </label>
+                            <input type="date" name="upDate" class="form-control-modern" required 
+                                   min="{{ datetime.now().strftime('%Y-%m-%d') }}">
+                            <small class="text-muted">Select the effective date for this price update</small>
+                        </div>
+                        <button type="submit" class="btn-primary-custom w-100">
+                            <i class="fas fa-save"></i> Create Price Update
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN - Price Update List -->
+        <div class="col-lg-8">
+            <div class="card-modern fade-in-up delay-1">
+                <div class="card-header-modern">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-ul me-2"></i>
+                        Price Update History
+                    </h5>
+                    <span class="badge-info">
+                        <i class="fas fa-chart-line"></i> {{ PriceUpdates|length }} Records
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    {% if PriceUpdates %}
+                    <div class="price-update-table-container">
+                        <table class="table-modern price-update-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px">#ID</th>
+                                    <th>Price Update Date</th>
+                                    <th style="width: 250px">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for PriceUpdate in PriceUpdates %}
+                                <tr class="price-update-row" data-id="{{ PriceUpdate.Id }}" data-date="{{ PriceUpdate.Date }}">
+                                    <td class="text-center">
+                                        <span class="badge-primary">{{ PriceUpdate.Id }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="date-icon">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </div>
+                                            <span class="fw-semibold">{{ PriceUpdate.Date }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="{{ url_for('priceList', PriceUpdateID=PriceUpdate.Id) }}" 
+                                               class="btn-primary-custom btn-sm">
+                                                <i class="fas fa-list-check"></i> Price List
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn-danger-custom btn-sm delete-price-btn"
+                                                    data-id="{{ PriceUpdate.Id }}"
+                                                    data-date="{{ PriceUpdate.Date }}">
+                                                <i class="fas fa-trash-alt"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times fa-4x mb-3" style="color: var(--gray-light);"></i>
+                            <h5 class="text-muted">No Price Updates Found</h5>
+                            <p class="text-muted small">Create your first price update using the form</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Warning Modal -->
+<div class="modal fade" id="stockWarningModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Stock Found - Warning!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="stockWarningBody">
+                <div class="text-center py-5">
+                    <div class="loading-spinner-small mx-auto mb-3"></div>
+                    <p>Checking stock records...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline-custom" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-danger-custom" id="confirmForceDeleteBtn">
+                    <i class="fas fa-trash-alt"></i> Yes, Delete Everything
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Price Update Specific Styles */
+    .price-update-illustration {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, var(--primary-bg), #e0e7ff);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
+    .price-update-table-container {
+        max-height: 500px;
+        overflow: auto;
+    }
+    
+    .price-update-table {
+        width: 100%;
+    }
+    
+    .price-update-table th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        z-index: 10;
+    }
+    
+    .price-update-row {
+        transition: var(--transition);
+    }
+    
+    .price-update-row:hover {
+        background: var(--gray-bg);
+    }
+    
+    .badge-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .date-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--gray-bg);
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+    
+    .btn-danger-custom {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 600;
+        transition: var(--transition);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-size: 13px;
+    }
+    
+    .btn-danger-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+    
+    .loading-spinner-small {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--gray-light);
+        border-top: 3px solid var(--danger);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    
+    /* Warning Modal Styles */
+    .warning-stats {
+        background: linear-gradient(135deg, #fef3c7, #fffbeb);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #fde68a;
+    }
+    
+    .stock-table-modal {
+        max-height: 350px;
+        overflow: auto;
+        border-radius: 12px;
+        border: 1px solid var(--gray-light);
+    }
+    
+    .stock-table-modal table {
+        width: 100%;
+        font-size: 13px;
+    }
+    
+    .stock-table-modal thead th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        color: white;
+        padding: 10px;
+        z-index: 10;
+    }
+    
+    .stock-table-modal td,
+    .stock-table-modal th {
+        padding: 10px;
+        border: 1px solid var(--gray-light);
+    }
+    
+    .empty-state {
+        padding: 60px 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-danger-custom,
+        .btn-primary-custom.btn-sm {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+        .price-update-table th,
+        .price-update-table td {
+            padding: 10px;
+        }
+    }
+</style>
+
+<script>
+    // Variables
+    let currentPriceUpdateId = null;
+    let stockWarningModal = null;
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap modal
+        stockWarningModal = new bootstrap.Modal(document.getElementById('stockWarningModal'));
+        
+        // Add click event to all delete buttons
+        document.querySelectorAll('.delete-price-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const priceUpdateId = this.getAttribute('data-id');
+                const priceUpdateDate = this.getAttribute('data-date');
+                checkStockBeforeDelete(priceUpdateId, priceUpdateDate);
+            });
+        });
+        
+        // Confirm delete button event
+        const confirmBtn = document.getElementById('confirmForceDeleteBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                forceDeletePriceUpdate();
+            });
+        }
+        
+        // Form submit with loading
+        const addForm = document.getElementById('addPriceUpdateForm');
+        if (addForm) {
+            addForm.addEventListener('submit', function(e) {
+                const dateInput = this.querySelector('input[name="upDate"]');
+                if (!dateInput.value) {
+                    e.preventDefault();
+                    showToast('Please select a date', 'error');
+                } else {
+                    showLoading();
+                }
+            });
+        }
+    });
+    
+    // Function to check stock before deletion
+    async function checkStockBeforeDelete(priceUpdateId, priceUpdateDate) {
+        currentPriceUpdateId = priceUpdateId;
+        
+        // Show loading state in modal
+        document.getElementById('stockWarningBody').innerHTML = `
+            <div class="text-center py-5">
+                <div class="loading-spinner-small mx-auto mb-3"></div>
+                <p>Checking stock records for <strong>${escapeHtml(priceUpdateDate)}</strong>...</p>
+            </div>
+        `;
+        
+        // Show modal
+        stockWarningModal.show();
+        
+        try {
+            const response = await fetch(`/deletePriceUpdate/${priceUpdateId}`);
+            const data = await response.json();
+            
+            if (data.has_stock) {
+                displayStockWarning(data);
+            } else {
+                // No stock found - confirm direct deletion
+                Swal.fire({
+                    title: 'No Stock Found',
+                    html: `<p>No stock records found for price update:</p>
+                           <p class="fw-bold text-primary">${escapeHtml(data.price_update_date || priceUpdateDate)}</p>
+                           <p class="text-muted">Do you want to delete this price update?</p>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, delete it',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        forceDeletePriceUpdate();
+                    }
+                    stockWarningModal.hide();
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('stockWarningBody').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error checking stock: ${escapeHtml(error.message)}
+                </div>
+            `;
+        }
+    }
+    
+    // Display stock warning with item details
+    function displayStockWarning(data) {
+        let totalStock = 0;
+        let totalValue = 0;
+        
+        data.items.forEach(item => {
+            totalStock += item.stock_quantity;
+            totalValue += item.stock_quantity * item.sell_price;
+        });
+        
+        let html = `
+            <div class="warning-stats">
+                <div class="row text-center g-3">
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-calendar-event fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Price Update Date</h6>
+                            <p class="fw-bold text-danger mb-0">${escapeHtml(data.price_update_date)}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-boxes fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Items with Stock</h6>
+                            <p class="fw-bold text-danger mb-0">${data.stock_count} Item(s)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-cubes fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Total Stock Quantity</h6>
+                            <p class="fw-bold text-danger mb-0">${totalStock.toLocaleString()} Units</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>WARNING:</strong> This price update has <strong>${data.stock_count}</strong> item(s) with stock records.
+                Deleting this price update will permanently remove:
+                <ul class="mt-2 mb-0">
+                    <li>All stock quantities for these items</li>
+                    <li>Stock In history records</li>
+                    <li>Stock Out history records</li>
+                    <li>Transfer stock records</li>
+                    <li>The price list data</li>
+                </ul>
+                <strong class="d-block mt-2 text-danger">⚠️ THIS ACTION CANNOT BE UNDONE!</strong>
+            </div>
+            
+            <div class="stock-table-modal">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Item Name</th>
+                            <th>Stock Qty</th>
+                            <th>Net Price</th>
+                            <th>Sell Price</th>
+                            <th>MRP</th>
+                            <th>Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.items.forEach((item, index) => {
+            const totalValueItem = item.stock_quantity * item.sell_price;
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${escapeHtml(item.item_name)}</strong></td>
+                    <td class="text-danger fw-bold">${item.stock_quantity}</td>
+                    <td>Rs. ${item.net_price.toFixed(2)}</td>
+                    <td>Rs. ${item.sell_price.toFixed(2)}</td>
+                    <td>Rs. ${item.mrp.toFixed(2)}</td>
+                    <td class="text-primary fw-bold">Rs. ${totalValueItem.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="alert alert-danger mt-3">
+                <i class="fas fa-database me-2"></i>
+                <strong>Total Value at Risk:</strong> Rs. ${totalValue.toFixed(2)}
+            </div>
+        `;
+        
+        document.getElementById('stockWarningBody').innerHTML = html;
+    }
+    
+    // Force delete price update
+    async function forceDeletePriceUpdate() {
+        if (!currentPriceUpdateId) return;
+        
+        Swal.fire({
+            title: 'Deleting...',
+            text: 'Please wait while we delete the price update and all associated stock.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        try {
+            const response = await fetch('/force_delete_price_update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    price_update_id: currentPriceUpdateId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred: ' + error.message,
+                icon: 'error',
+                confirmButtonColor: '#dc2626'
+            });
+        } finally {
+            if (stockWarningModal) {
+                stockWarningModal.hide();
+            }
+        }
+    }
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

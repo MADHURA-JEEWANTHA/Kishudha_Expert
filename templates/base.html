@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kishudha Expert Distribution - {% block title %}Stock Management System{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* ========================================
+           CSS VARIABLES - Modern Color Palette
+        ======================================== */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-bg: #eef2ff;
+            --secondary: #1e293b;
+            --secondary-light: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --gray-bg: #f1f5f9;
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 85px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gray-bg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ========================================
+           MODERN SIDEBAR
+        ======================================== */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100%;
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+            transition: var(--transition);
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar.collapsed .sidebar-link span,
+        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-footer span,
+        .sidebar.collapsed .menu-label {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-link i {
+            margin-right: 0;
+            font-size: 22px;
+        }
+
+        .sidebar.collapsed .sidebar-brand {
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .sidebar.collapsed .logo-img {
+            margin-right: 0;
+        }
+
+        /* Sidebar Brand */
+        .sidebar-brand {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .sidebar-brand h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .sidebar-brand p {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        /* Menu Label */
+        .menu-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 20px 20px 8px 20px;
+        }
+
+        /* Sidebar Links */
+        .sidebar-nav {
+            padding: 10px 0;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: var(--transition);
+            margin: 4px 12px;
+            border-radius: 12px;
+            gap: 14px;
+            position: relative;
+        }
+
+        .sidebar-link i {
+            width: 24px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .sidebar-link span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .logout-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #fca5a5;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: var(--transition);
+            gap: 14px;
+            margin: 0 12px;
+        }
+
+        .logout-link i {
+            width: 24px;
+            font-size: 20px;
+        }
+
+        .logout-link:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            transform: translateX(4px);
+        }
+
+        /* ========================================
+           MAIN CONTENT
+        ======================================== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            transition: var(--transition);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        /* ========================================
+           TOP NAVBAR
+        ======================================== */
+        .top-navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 16px 28px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--dark);
+            transition: var(--transition);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-toggle:hover {
+            background: var(--gray-light);
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--dark), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .user-details {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        /* ========================================
+           TOAST NOTIFICATIONS
+        ======================================== */
+        .toast-container-custom {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 340px;
+            max-width: 450px;
+        }
+
+        .toast-notification {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-left: 4px solid;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toast-notification:hover {
+            transform: translateX(-4px);
+        }
+
+        .toast-notification.success { border-left-color: var(--success); }
+        .toast-notification.success .toast-icon { color: var(--success); }
+
+        .toast-notification.error, .toast-notification.danger { border-left-color: var(--danger); }
+        .toast-notification.error .toast-icon,
+        .toast-notification.danger .toast-icon { color: var(--danger); }
+
+        .toast-notification.warning { border-left-color: var(--warning); }
+        .toast-notification.warning .toast-icon { color: var(--warning); }
+
+        .toast-notification.info { border-left-color: var(--info); }
+        .toast-notification.info .toast-icon { color: var(--info); }
+
+        .toast-icon { font-size: 24px; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+        .toast-message { font-size: 13px; color: var(--gray); }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: opacity 0.2s;
+        }
+
+        .toast-close:hover { opacity: 0.7; }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .toast-notification.removing {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        /* ========================================
+           LOADING OVERLAY
+        ======================================== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ========================================
+           MODAL FIXES
+        ======================================== */
+        .modal {
+            z-index: 1060 !important;
+            background: transparent !important;
+        }
+
+        .modal-backdrop {
+            z-index: 1040 !important;
+            position: fixed !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .modal.show {
+            z-index: 1061 !important;
+            display: block !important;
+        }
+
+        .modal-content {
+            z-index: 1062 !important;
+            position: relative !important;
+            background: white !important;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .modal input,
+        .modal select,
+        .modal textarea,
+        .modal button {
+            position: relative;
+            z-index: 1064 !important;
+            pointer-events: auto !important;
+        }
+
+        .modal-backdrop {
+            pointer-events: none !important;
+        }
+
+        .modal-open {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+        }
+
+        .modal.show .modal-dialog {
+            transform: none;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ========================================
+           ANIMATION CLASSES
+        ======================================== */
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+
+        /* ========================================
+           CARD STYLES
+        ======================================== */
+        .card-modern {
+            background: white;
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+            overflow: hidden;
+        }
+
+        .card-modern:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        /* ========================================
+           BUTTON STYLES
+        ======================================== */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            border-radius: 12px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: var(--transition);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+            color: white;
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            border: 2px solid var(--gray-light);
+            border-radius: 12px;
+            padding: 10px 24px;
+            font-weight: 500;
+            transition: var(--transition);
+            color: var(--dark);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-outline-custom:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* ========================================
+           FORM STYLES
+        ======================================== */
+        .form-control-modern,
+        .form-select-modern {
+            border: 1px solid var(--gray-light);
+            border-radius: 14px;
+            padding: 12px 16px;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .form-control-modern:focus,
+        .form-select-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            outline: none;
+        }
+
+        .form-label-custom {
+            font-weight: 500;
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .input-group-custom {
+            border: 1px solid var(--gray-light);
+            border-radius: 14px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            background: white;
+        }
+
+        .input-group-custom:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-group-custom .input-group-text {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 12px 0 12px 16px;
+        }
+
+        .input-group-custom input,
+        .input-group-custom select,
+        .input-group-custom textarea {
+            border: none;
+            background: transparent;
+            padding: 12px 16px 12px 8px;
+            width: 100%;
+        }
+
+        .input-group-custom input:focus,
+        .input-group-custom select:focus,
+        .input-group-custom textarea:focus {
+            outline: none;
+        }
+
+        /* ========================================
+           TABLE STYLES
+        ======================================== */
+        .table-modern {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-modern thead th {
+            background: var(--secondary);
+            color: white;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-modern tbody tr {
+            transition: var(--transition);
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .table-modern tbody tr:hover {
+            background: var(--gray-bg);
+        }
+
+        .table-modern td {
+            padding: 14px 16px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        /* ========================================
+           BADGE STYLES
+        ======================================== */
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-warning {
+            background: #fed7aa;
+            color: #92400e;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ========================================
+           KPI MINI CARD
+        ======================================== */
+        .kpi-mini-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gray-light);
+        }
+
+        .kpi-mini-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        /* ========================================
+           CUSTOMER AVATAR
+        ======================================== */
+        .customer-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        /* ========================================
+           SEARCH INPUT GROUP
+        ======================================== */
+        .search-input-group {
+            position: relative;
+        }
+
+        .search-input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .search-input-group input,
+        .search-input-group select {
+            padding-left: 45px;
+            border-radius: 14px;
+            border: 1px solid var(--gray-light);
+            height: 48px;
+            width: 100%;
+        }
+
+        /* ========================================
+           SCROLLBAR
+        ======================================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-light);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray);
+        }
+
+        /* ========================================
+           RESPONSIVE
+        ======================================== */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: var(--sidebar-collapsed-width);
+            }
+            .sidebar .sidebar-link span,
+            .sidebar .sidebar-brand span,
+            .sidebar .menu-label {
+                display: none;
+            }
+            .sidebar .sidebar-brand {
+                justify-content: center;
+                padding: 20px 0;
+            }
+            .sidebar .sidebar-link {
+                justify-content: center;
+                padding: 14px 0;
+            }
+            .main-content {
+                margin-left: var(--sidebar-collapsed-width);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 12px;
+            }
+            .top-navbar {
+                padding: 12px 18px;
+            }
+            .page-title {
+                font-size: 18px;
+            }
+            .user-details {
+                display: none;
+            }
+            .toast-container-custom {
+                min-width: 280px;
+                top: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container-custom" id="toastContainer"></div>
+
+    <!-- Flash Messages Container (Hidden - for Flask flash messages) -->
+    <div id="flashMessagesContainer" style="display: none;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message" data-type="{{ category }}" data-message="{{ message }}"></div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="logo-img">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div>
+                <h3>Kishudha Expert</h3>
+                <p>Distribution System</p>
+            </div>
+        </div>
+
+        <div class="menu-label">MAIN MENU</div>
+
+        <div class="sidebar-nav">
+            <a href="{{ url_for('index') }}" class="sidebar-link {% if request.endpoint == 'index' %}active{% endif %}">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('manage_Itam') }}" class="sidebar-link {% if request.endpoint == 'manage_Itam' %}active{% endif %}">
+                <i class="fas fa-boxes"></i>
+                <span>Items</span>
+            </a>
+
+            <a href="{{ url_for('PriceUpdateManage') }}" class="sidebar-link {% if request.endpoint == 'PriceUpdateManage' %}active{% endif %}">
+                <i class="fas fa-tags"></i>
+                <span>Price Updates</span>
+            </a>
+
+            <a href="{{ url_for('stock') }}" class="sidebar-link {% if request.endpoint == 'stock' %}active{% endif %}">
+                <i class="fas fa-database"></i>
+                <span>Stock</span>
+            </a>
+
+            <a href="{{ url_for('multi_stock') }}" class="sidebar-link">
+                <i class="fas fa-plus-circle"></i>
+                <span>Multi Stock</span>
+            </a>
+
+            <a href="{{ url_for('send_stock') }}" class="sidebar-link">
+                <i class="fas fa-paper-plane"></i>
+                <span>Send Stock</span>
+            </a>
+
+            <a href="{{ url_for('customers') }}" class="sidebar-link {% if request.endpoint == 'customers' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </a>
+
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-credit-card"></i>
+                <span>Credits</span>
+            </a>
+
+            <a href="{{ url_for('transactions') }}" class="sidebar-link">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Transactions</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}" class="logout-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+
+        <!-- Top Navbar -->
+        <div class="top-navbar">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div>
+                <h4 class="page-title">{% block page_title %}Dashboard{% endblock %}</h4>
+            </div>
+
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name">{{ session.get('user', 'Admin') }}</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <div class="user-avatar">
+                    {{ session.get('user', 'A')[0].upper() if session.get('user') else 'A' }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="fade-in">
+            {% block content %}{% endblock %}
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ========================================
+        // TOAST NOTIFICATION SYSTEM
+        // ========================================
+        const toastContainer = document.getElementById('toastContainer');
+
+        function showToast(message, type = 'success', title = null) {
+            const titles = {
+                success: 'Success!',
+                error: 'Error!',
+                danger: 'Error!',
+                warning: 'Warning!',
+                info: 'Information'
+            };
+
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                danger: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+
+            const toastTitle = title || titles[type] || 'Notice';
+            const icon = icons[type] || icons.info;
+
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.innerHTML = `
+                <i class="${icon} toast-icon"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${toastTitle}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close"><i class="fas fa-times"></i></button>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => removeToast(toast));
+
+            setTimeout(() => removeToast(toast), 5000);
+        }
+
+        function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 300);
+        }
+
+        // ========================================
+        // CHECK FOR FLASK FLASH MESSAGES
+        // ========================================
+        function checkFlashMessages() {
+            const flashContainer = document.getElementById('flashMessagesContainer');
+            if (flashContainer) {
+                const flashes = flashContainer.querySelectorAll('.flash-message');
+                flashes.forEach(flash => {
+                    const type = flash.getAttribute('data-type') || 'info';
+                    const message = flash.getAttribute('data-message') || '';
+                    if (message) {
+                        showToast(message, type);
+                    }
+                    flash.remove();
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkFlashMessages, 100);
+        });
+
+        // ========================================
+        // SIDEBAR TOGGLE
+        // ========================================
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
+
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true') {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+        }
+
+        // ========================================
+        // LOADING OVERLAY
+        // ========================================
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function() {
+                showLoading();
+            });
+        });
+
+        window.addEventListener('load', function() {
+            hideLoading();
+        });
+
+        // ========================================
+        // MODAL FIXES
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const modals = document.querySelectorAll('.modal');
+
+            modals.forEach(modal => {
+                modal.addEventListener('show.bs.modal', function() {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    modal.style.zIndex = '1061';
+                });
+
+                modal.addEventListener('shown.bs.modal', function() {
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.style.zIndex = '1040';
+                        backdrop.style.pointerEvents = 'none';
+                    }
+                    modal.style.zIndex = '1061';
+                    setTimeout(() => {
+                        const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea');
+                        if (firstInput) firstInput.focus();
+                    }, 150);
+                });
+
+                modal.addEventListener('hidden.bs.modal', function() {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    modal.style.zIndex = '';
+                });
+            });
+        });
+
+        // ========================================
+        // NUMBER FORMATTING
+        // ========================================
+        function formatNumber(value) {
+            if (!value) return '';
+            let num = value.toString().replace(/[^0-9.]/g, '');
+            if (num === '') return '';
+            let parts = num.split('.');
+            parts[0] = parseInt(parts[0]).toLocaleString('en-US');
+            return parts.length > 1 ? parts[0] + '.' + parts[1] : parts[0];
+        }
+
+        function cleanNumber(value) {
+            return value.replace(/,/g, '').replace(/Rs\./g, '').trim();
+        }
+
+        document.querySelectorAll('.format-number').forEach(input => {
+            input.value = formatNumber(input.value);
+            input.addEventListener('focus', function() { this.value = cleanNumber(this.value); });
+            input.addEventListener('blur', function() { this.value = formatNumber(this.value); });
+            input.addEventListener('input', function() { this.value = this.value.replace(/[^0-9.]/g, ''); });
+        });
+
+        // ========================================
+        // CONFIRM DELETE HELPER
+        // ========================================
+        window.confirmAction = function(message, callback) {
+            if (confirm(message)) callback();
+        };
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Price Management{% endblock %}
+
+{% block page_title %}Price Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap flex-md-nowrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-tags me-2" style="color: var(--primary);"></i>
+                Price Management
+            </h4>
+            <p class="text-muted small mb-0">Update Net, Sell & MRP prices for all items</p>
+        </div>
+        <a href="{{ url_for('PriceUpdateManage') }}" class="btn-outline-custom">
+            <i class="fas fa-arrow-left"></i> Back to Price Updates
+        </a>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="card-modern fade-in-up">
+        <div class="card-header-modern">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 w-100">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-check me-2"></i>
+                    Price List
+                </h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <select id="categorySelect" class="form-select-modern" style="width: auto; min-width: 180px;">
+                        <option value="all">📁 All Categories</option>
+                        {% for Category in Categorys %}
+                        <option value="{{ Category.Id }}">{{ Category.Cat_Name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" form="priceForm" class="btn-primary-custom" id="saveAllBtn">
+                        <i class="fas fa-save"></i> Save All Prices
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <form id="priceForm" method="POST" action="{{ url_for('add_price', PriceUpdateID=PriceUpdateID) }}">
+                <div class="price-table-container">
+                    <table class="price-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 200px;">Item Name</th>
+                                <th>Category</th>
+                                <th class="price-column-header">Net Price (Rs.)</th>
+                                <th class="price-column-header">Sell Price (Rs.)</th>
+                                <th class="price-column-header">MRP (Rs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceTableBody">
+                            {% for item in items %}
+                            <tr data-cat="{{ item.Cat_ID }}" class="price-row" data-item-id="{{ item.Id }}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="item-icon-small">
+                                            <i class="fas fa-box"></i>
+                                        </div>
+                                        <span class="fw-semibold">{{ item.Item_Name }}</span>
+                                    </div>
+                                    <input type="hidden" name="item_id[]" value="{{ item.Id }}">
+                                </td>
+                                <td>
+                                    <span class="badge-info">
+                                        <i class="fas fa-folder me-1"></i>
+                                        {% for cat in Categorys %}
+                                            {% if cat.Id == item.Cat_ID %}
+                                                {{ cat.Cat_Name }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="price-input-group">
+                                        <span class="price-currency">Rs.</span>
+                                        <input type="text" name="net_price[]"
+                                               class="price-input format-number"
+                                               step="0.001"
+                                               value="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.NetPrice|float|round(2) }}{% endif %}{% endfor %}"
+                                               placeholder="0.00"
+                                               data-original="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.NetPrice|float|round(2) }}{% endif %}{% endfor %}">
+                                    </div>
+                                  </td>
+                                <td>
+                                    <div class="price-input-group">
+                                        <span class="price-currency">Rs.</span>
+                                        <input type="text" name="sell_price[]"
+                                               class="price-input format-number"
+                                               step="0.001"
+                                               value="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.SellPrice|float|round(2) }}{% endif %}{% endfor %}"
+                                               placeholder="0.00"
+                                               data-original="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.SellPrice|float|round(2) }}{% endif %}{% endfor %}">
+                                    </div>
+                                  </td>
+                                <td>
+                                    <div class="price-input-group">
+                                        <span class="price-currency">Rs.</span>
+                                        <input type="text" name="mrp[]"
+                                               class="price-input format-number"
+                                               step="0.001"
+                                               value="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.MRP|float|round(2) }}{% endif %}{% endfor %}"
+                                               placeholder="0.00"
+                                               data-original="{% for p in prices %}{% if p.ItemID == item.Id %}{{ p.MRP|float|round(2) }}{% endif %}{% endfor %}">
+                                    </div>
+                                  </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-footer bg-transparent p-3 border-top">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <span id="savedCount">0</span> items have saved prices
+                    </small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn-outline-custom btn-sm" id="resetChangesBtn">
+                        <i class="fas fa-undo-alt"></i> Reset Changes
+                    </button>
+                    <button type="submit" form="priceForm" class="btn-primary-custom" id="saveBtn">
+                        <i class="fas fa-save"></i> Save All Prices
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Price Table Specific Styles */
+    .price-table-container {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .price-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .price-table th,
+    .price-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    /* Alignment fixes for columns */
+    .price-table th:nth-child(1),
+    .price-table th:nth-child(2) {
+        text-align: left;
+    }
+
+    .price-table th:nth-child(3),
+    .price-table th:nth-child(4),
+    .price-table th:nth-child(5) {
+        text-align: right;
+    }
+
+    .price-table td:nth-child(1),
+    .price-table td:nth-child(2) {
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .price-table td:nth-child(3),
+    .price-table td:nth-child(4),
+    .price-table td:nth-child(5) {
+        text-align: right;
+        vertical-align: middle;
+    }
+
+    .price-column-header {
+        text-align: right !important;
+    }
+
+    .price-table thead th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        color: white;
+        font-weight: 600;
+        z-index: 10;
+    }
+
+    .price-row {
+        transition: var(--transition);
+    }
+
+    .price-row:hover {
+        background: var(--gray-bg);
+    }
+
+    .price-row.saved-row {
+        background: #ecfdf5;
+    }
+
+    .price-row.saved-row:hover {
+        background: #d1fae5;
+    }
+
+    .price-row.changed-row {
+        background: #fef3c7;
+    }
+
+    .price-row.changed-row:hover {
+        background: #fde68a;
+    }
+
+    .price-row.hidden-row {
+        display: none;
+    }
+
+    .item-icon-small {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary-bg), #e0e7ff);
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+
+    .price-input-group {
+        display: inline-flex;
+        align-items: center;
+        background: white;
+        border: 1px solid var(--gray-light);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: var(--transition);
+        min-width: 150px;
+        max-width: 180px;
+    }
+
+    .price-input-group:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .price-input-group.changed {
+        border-color: var(--warning);
+        background: #fef3c7;
+    }
+
+    .price-currency {
+        background: var(--gray-bg);
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray);
+        border-right: 1px solid var(--gray-light);
+    }
+
+    .price-input {
+        border: none;
+        padding: 8px 12px;
+        width: 130px;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: right;
+        outline: none;
+        font-family: monospace;
+    }
+
+    .price-input:focus {
+        outline: none;
+        background: white;
+    }
+
+    .price-input::placeholder {
+        color: var(--gray-light);
+        font-weight: normal;
+    }
+
+    .badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    @media (max-width: 768px) {
+        .price-table th,
+        .price-table td {
+            padding: 10px 12px;
+        }
+
+        .price-input-group {
+            min-width: 120px;
+            max-width: 140px;
+        }
+
+        .price-input {
+            width: 90px;
+            font-size: 12px;
+        }
+
+        .price-currency {
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .item-icon-small {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+    }
+</style>
+
+<script>
+    // ========================================
+    // NUMBER FORMATTING FUNCTIONS
+    // ========================================
+
+    function cleanNumber(value) {
+        if (!value) return "";
+        return value.toString().replace(/,/g, '').replace(/Rs\./g, '').trim();
+    }
+
+    function formatNumber(value) {
+        if (value === null || value === undefined || value === "") return "";
+        let numStr = value.toString().replace(/,/g, '');
+        let num = parseFloat(numStr);
+        if (isNaN(num)) return "";
+        return num.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function updateAllSavedRowsStatus() {
+        const rows = document.querySelectorAll('.price-row');
+        rows.forEach(row => {
+            let hasPrice = false;
+            const inputs = row.querySelectorAll('.price-input');
+            inputs.forEach(input => {
+                let val = parseFloat(cleanNumber(input.value));
+                if (!isNaN(val) && val > 0) hasPrice = true;
+            });
+            if (hasPrice) row.classList.add('saved-row');
+            else row.classList.remove('saved-row');
+        });
+        updateSavedCount();
+    }
+
+    function updateRowChangeStatus(input) {
+        const row = input.closest('.price-row');
+        if (!row) return;
+        const originalValue = input.getAttribute('data-original') || '';
+        const currentValue = cleanNumber(input.value);
+        const originalNum = parseFloat(originalValue) || 0;
+        const currentNum = parseFloat(currentValue) || 0;
+        const inputGroup = input.closest('.price-input-group');
+        if (originalNum !== currentNum) {
+            row.classList.add('changed-row');
+            if (inputGroup) inputGroup.classList.add('changed');
+        } else {
+            if (inputGroup) inputGroup.classList.remove('changed');
+            const rowInputs = row.querySelectorAll('.price-input');
+            let hasChanges = false;
+            rowInputs.forEach(inp => {
+                const orig = parseFloat(inp.getAttribute('data-original') || '') || 0;
+                const curr = parseFloat(cleanNumber(inp.value)) || 0;
+                if (orig !== curr) hasChanges = true;
+            });
+            if (!hasChanges) row.classList.remove('changed-row');
+        }
+        updateAllSavedRowsStatus();
+    }
+
+    function updateSavedCount() {
+        const rows = document.querySelectorAll('.price-row');
+        let savedCount = 0;
+        rows.forEach(row => {
+            if (row.classList.contains('saved-row')) savedCount++;
+        });
+        const span = document.getElementById('savedCount');
+        if (span) span.innerText = savedCount;
+    }
+
+    function resetAllChanges() {
+        document.querySelectorAll('.price-row').forEach(row => {
+            const inputs = row.querySelectorAll('.price-input');
+            inputs.forEach(input => {
+                const originalValue = input.getAttribute('data-original') || '';
+                if (originalValue) input.value = formatNumber(originalValue);
+                else input.value = '';
+                const grp = input.closest('.price-input-group');
+                if (grp) grp.classList.remove('changed');
+            });
+            row.classList.remove('changed-row');
+        });
+        updateAllSavedRowsStatus();
+        if (typeof showToast === 'function') showToast('All changes have been reset', 'info', 'Reset Complete');
+    }
+
+    // ========================================
+    // INITIALIZE
+    // ========================================
+    document.addEventListener("DOMContentLoaded", function() {
+        const categorySelect = document.getElementById("categorySelect");
+        const rows = document.querySelectorAll("#priceTableBody tr");
+        const priceForm = document.getElementById("priceForm");
+
+        // ----- Fix large number display (remove commas before parse) -----
+        document.querySelectorAll('.price-input').forEach(input => {
+            let rawValue = input.value;
+            let cleanVal = rawValue.replace(/,/g, '').replace(/Rs\./g, '').trim();
+            let num = parseFloat(cleanVal);
+            if (!isNaN(num)) {
+                input.value = formatNumber(num);
+                input.setAttribute('data-original', num.toString());
+            } else {
+                input.value = '';
+                input.setAttribute('data-original', '');
+            }
+
+            // Allow only numbers and decimal point
+            input.addEventListener('input', function(e) {
+                let raw = this.value.replace(/[^0-9.]/g, '');
+                let parts = raw.split('.');
+                if (parts.length > 2) raw = parts[0] + '.' + parts.slice(1).join('');
+                this.value = raw;
+            });
+
+            input.addEventListener('blur', function() {
+                let raw = cleanNumber(this.value);
+                let num = parseFloat(raw);
+                if (!isNaN(num)) this.value = formatNumber(num);
+                else this.value = '';
+                updateRowChangeStatus(this);
+            });
+        });
+
+        // Initial saved row status
+        updateAllSavedRowsStatus();
+
+        // ----- CATEGORY FILTER (FIXED) -----
+        if (categorySelect) {
+            categorySelect.addEventListener("change", function() {
+                const selected = this.value;
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const cat = row.getAttribute("data-cat");
+                    if (selected === "all" || selected === cat) {
+                        row.classList.remove("hidden-row");
+                        visibleCount++;
+                    } else {
+                        row.classList.add("hidden-row");
+                    }
+                });
+                if (typeof showToast === 'function') {
+                    showToast(`${visibleCount} items visible`, "info", "Filter Applied");
+                }
+            });
+        }
+
+        // ----- RESET BUTTON -----
+        const resetBtn = document.getElementById('resetChangesBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Reset All Changes?',
+                        text: 'This will undo all unsaved price changes.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#f59e0b',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Yes, reset changes',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => { if (result.isConfirmed) resetAllChanges(); });
+                } else {
+                    resetAllChanges();
+                }
+            });
+        }
+
+        // ----- FORM SUBMIT (remove commas before sending) -----
+        if (priceForm) {
+            priceForm.addEventListener("submit", function(e) {
+                document.querySelectorAll(".price-input").forEach(input => {
+                    input.value = cleanNumber(input.value);
+                });
+                let hasErrors = false;
+                document.querySelectorAll(".price-input").forEach(input => {
+                    let val = parseFloat(input.value);
+                    if (isNaN(val)) input.value = "0";
+                });
+                if (!hasErrors && typeof showLoading === 'function') showLoading();
+            });
+        }
+
+        // ----- SAVE BUTTON -----
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function(e) {
+                const changedRows = document.querySelectorAll('.price-row.changed-row');
+                if (changedRows.length === 0) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'No Changes',
+                            text: 'No price changes to save.',
+                            confirmButtonColor: '#6366f1'
+                        });
+                    }
+                } else if (typeof showLoading === 'function') {
+                    showLoading();
+                }
+            });
+        }
+
+        // ----- CTRL+S SHORTCUT -----
+        document.addEventListener("keydown", function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                const changedRows = document.querySelectorAll('.price-row.changed-row');
+                if (changedRows.length > 0) {
+                    document.querySelectorAll(".price-input").forEach(input => {
+                        input.value = cleanNumber(input.value);
+                    });
+                    priceForm.submit();
+                    if (typeof showToast === 'function') showToast("Saving prices...", "info");
+                } else if (typeof showToast === 'function') {
+                    showToast("No changes to save", "info");
+                }
+            }
+        });
+
+        // ----- TOOLTIP FOR SAVED ROWS -----
+        document.querySelectorAll(".saved-row .item-icon-small").forEach(icon => {
+            icon.setAttribute("title", "Previously saved price");
+            icon.style.cursor = "help";
+        });
+    });
+
+    // Helper function (in case showToast is not defined in base)
+    function showToastMessage(message, type, title) {
+        if (typeof showToast === 'function') {
+            showToast(message, type, title);
+        } else {
+            console.log(message);
+        }
+    }
+</script>
+{% endblock %}

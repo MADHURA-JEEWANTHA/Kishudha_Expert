@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block page_title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section with Action Button -->
+    <div class="d-flex flex-wrap flex-md-nowrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-exchange-alt me-2" style="color: var(--primary);"></i>
+                Transactions
+            </h4>
+            <p class="text-muted small mb-0">Manage all credit invoices and payment transactions</p>
+        </div>
+        <a href="/add_transaction" class="btn-primary-custom">
+            <i class="fas fa-plus-circle"></i> Add Transaction
+        </a>
+    </div>
+
+    <!-- KPI Cards Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-1">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Credit</span>
+                        <h3 class="mb-0 text-success mt-1">Rs. {{ total_credit | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Total invoice amount</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Debit</span>
+                        <h3 class="mb-0 text-danger mt-1">Rs. {{ total_debit | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Total payments received</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Net Balance</span>
+                        <h3 class="mb-0 mt-1" style="color: var(--primary);">Rs. {{ total_balance | currency }}</h3>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, var(--primary), var(--primary-light));">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Credit - Debit</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card-modern fade-in-up delay-4 mb-4">
+        <div class="card-header-modern">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Transactions</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" action="/transactions" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label-custom">Search Customer</label>
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" class="form-control-modern" 
+                               placeholder="Type customer name..." 
+                               value="{{ request.args.get('search', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label-custom">Transaction Type</label>
+                    <select name="type" class="form-select-modern">
+                        <option value="">All Types</option>
+                        <option value="credit" {% if request.args.get('type') == 'credit' %}selected{% endif %}>Credit (Invoice)</option>
+                        <option value="debit" {% if request.args.get('type') == 'debit' %}selected{% endif %}>Debit (Payment)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn-primary-custom w-100">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <a href="/transactions" class="btn-outline-custom">
+                            <i class="fas fa-undo-alt"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card-modern fade-in-up">
+        <div class="card-header-modern">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Transaction History</h5>
+            <span class="badge-info">
+                <i class="fas fa-chart-line"></i> {{ data|length }} Records Found
+            </span>
+        </div>
+        <div class="card-body p-0">
+            {% if data %}
+            <div style="max-height: 550px; overflow-x: auto;">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Reference</th>
+                            <th>Note</th>
+                            <th style="width: 100px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in data %}
+                        <tr class="transaction-row">
+                            <td>
+                                <span class="fw-medium">{{ t.date }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="customer-avatar" style="width: 32px; height: 32px; font-size: 14px;">
+                                        {{ t.name[0].upper() if t.name else '?' }}
+                                    </div>
+                                    <span class="fw-semibold">{{ t.name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if t.type == 'credit' %}
+                                <span class="badge-success">
+                                    <i class="fas fa-file-invoice"></i> Credit
+                                </span>
+                                {% else %}
+                                <span class="badge-danger">
+                                    <i class="fas fa-money-bill-wave"></i> Debit
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.type == 'credit' %}
+                                <span class="text-success fw-bold">
+                                    + Rs. {{ t.amount | currency }}
+                                </span>
+                                {% else %}
+                                <span class="text-danger fw-bold">
+                                    - Rs. {{ t.amount | currency }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.payment_method %}
+                                <span class="badge-info">
+                                    <i class="fas fa-credit-card"></i> {{ t.payment_method }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small">{{ t.payment_reference or '—' }}</code>
+                            </td>
+                            <td class="text-muted small">
+                                {{ t.note|truncate(30) or '—' }}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="/edit_transaction/{{ t.id }}" class="btn-action edit" title="Edit">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <button type="button" class="btn-action delete" title="Delete" 
+                                            onclick="confirmDeleteTransaction({{ t.id }}, '{{ t.name }}', {{ t.amount|float }}, '{{ t.type }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-exchange-alt fa-4x mb-3" style="color: var(--gray-light);"></i>
+                    <h5 class="text-muted">No transactions found</h5>
+                    <p class="text-muted small">Start by adding your first transaction</p>
+                    <a href="/add_transaction" class="btn-primary-custom mt-2">
+                        <i class="fas fa-plus-circle"></i> Add Transaction
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Additional styles specific to transactions page */
+    .transaction-row {
+        transition: var(--transition);
+    }
+    
+    .transaction-row:hover {
+        background: var(--gray-bg);
+    }
+    
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+    }
+    
+    .btn-action.edit {
+        color: var(--warning);
+    }
+    
+    .btn-action.edit:hover {
+        background: #fef3c7;
+        color: #d97706;
+        transform: scale(1.05);
+    }
+    
+    .btn-action.delete {
+        color: var(--danger);
+    }
+    
+    .btn-action.delete:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        transform: scale(1.05);
+    }
+    
+    code {
+        background: var(--gray-bg);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+    }
+    
+    .empty-state {
+        padding: 60px 20px;
+    }
+    
+    .search-input-group {
+        position: relative;
+    }
+    
+    .search-input-group i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+        font-size: 14px;
+        z-index: 1;
+    }
+    
+    .search-input-group .form-control-modern {
+        padding-left: 42px;
+    }
+    
+    .table-modern td {
+        vertical-align: middle;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-action {
+            width: 28px;
+            height: 28px;
+        }
+        .table-modern td, 
+        .table-modern th {
+            padding: 10px 12px;
+        }
+    }
+</style>
+
+<script>
+    // Confirm delete transaction with SweetAlert
+    function confirmDeleteTransaction(transactionId, customerName, amount, type) {
+        const typeText = type === 'credit' ? 'Credit Invoice' : 'Payment';
+        const amountFormatted = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(Math.abs(amount));
+        
+        Swal.fire({
+            title: 'Delete Transaction?',
+            html: `
+                <div style="text-align: left;">
+                    <p><strong>Customer:</strong> ${customerName}</p>
+                    <p><strong>Type:</strong> ${typeText}</p>
+                    <p><strong>Amount:</strong> Rs. ${amountFormatted}</p>
+                </div>
+                <div class="alert alert-warning mt-3 small">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    This action cannot be undone!
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading();
+                window.location.href = `/delete_transaction/${transactionId}`;
+            }
+        });
+    }
+    
+    // Show success/error messages from flash
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for flash messages
+        const flashContainer = document.getElementById('flashMessagesContainer');
+        if (flashContainer) {
+            const flashes = flashContainer.querySelectorAll('.flash-message');
+            flashes.forEach(flash => {
+                const type = flash.getAttribute('data-type');
+                const message = flash.getAttribute('data-message');
+                if (message) {
+                    let icon = 'info';
+                    if (type === 'success') icon = 'success';
+                    if (type === 'danger' || type === 'error') icon = 'error';
+                    if (type === 'warning') icon = 'warning';
+                    
+                    Swal.fire({
+                        icon: icon,
+                        title: type === 'success' ? 'Success!' : 'Notice',
+                        text: message,
+                        timer: 3000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                }
+            });
+        }
+    });
+    
+    // Format amount display on hover
+    document.querySelectorAll('.transaction-row td:nth-child(4)').forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s';
+        });
+        cell.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+</script>
+{% endblock %}

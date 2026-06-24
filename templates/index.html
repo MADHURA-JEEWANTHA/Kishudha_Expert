@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section with fade-in -->
+    <div class="welcome-section animate-fade-in-up mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h4 class="mb-1">Welcome back, {{ session.get('user', 'Admin') }}!</h4>
+                <p class="text-muted small mb-0">Here's what's happening with your business today.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge-info animate-pulse">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    {{ today }}
+                </span>
+                <a href="{{ url_for('stock') }}" class="btn-primary-custom btn-sm">
+                    <i class="fas fa-boxes"></i> Go to Stock
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards Row with animated counters -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-mini-card animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Items</span>
+                        <h2 class="mb-0 mt-1 fw-bold counter" data-target="{{ total_items }}">0</h2>
+                    </div>
+                    <div class="kpi-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-chart-line me-1"></i> Active inventory items
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-mini-card animate-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Price Updates</span>
+                        <h2 class="mb-0 mt-1 fw-bold counter" data-target="{{ total_updates }}">0</h2>
+                    </div>
+                    <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i> Total price revisions
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-mini-card animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Customers</span>
+                        <h2 class="mb-0 mt-1 fw-bold counter" data-target="{{ total_customers }}">0</h2>
+                    </div>
+                    <div class="kpi-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-user-plus me-1"></i> Registered customers
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="kpi-mini-card animate-fade-in-up" style="animation-delay: 0.4s;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Credit Balance</span>
+                        <h2 class="mb-0 mt-1 fw-bold credit-counter" data-target="{{ total_credit|replace(',', '')|float }}">Rs 0</h2>
+                    </div>
+                    <div class="kpi-icon" style="background: linear-gradient(135deg, var(--primary), var(--primary-light));">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-rupee-sign me-1"></i> Outstanding credit amount
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-12">
+            <div class="quick-actions-card animate-fade-in-up" style="animation-delay: 0.5s;">
+                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-bolt me-2" style="color: var(--primary);"></i>Quick Actions</h6>
+                        <small class="text-muted">Common tasks to manage your inventory</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('manage_Itam') }}" class="btn-outline-custom btn-sm action-btn">
+                            <i class="fas fa-box"></i> Manage Items
+                        </a>
+                        <a href="{{ url_for('PriceUpdateManage') }}" class="btn-outline-custom btn-sm action-btn">
+                            <i class="fas fa-tags"></i> Price Updates
+                        </a>
+                        <a href="{{ url_for('multi_stock') }}" class="btn-outline-custom btn-sm action-btn">
+                            <i class="fas fa-plus-circle"></i> Add Stock
+                        </a>
+                        <a href="{{ url_for('add_customer') }}" class="btn-outline-custom btn-sm action-btn">
+                            <i class="fas fa-user-plus"></i> New Customer
+                        </a>
+                        <a href="{{ url_for('add_transaction') }}" class="btn-outline-custom btn-sm action-btn">
+                            <i class="fas fa-exchange-alt"></i> Add Transaction
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Items Table with row animations -->
+    <div class="card-modern animate-fade-in-up" style="animation-delay: 0.6s;">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-clock me-2"></i>
+                Recently Added Items
+            </h5>
+            <a href="{{ url_for('manage_Itam') }}" class="btn-primary-custom btn-sm">
+                <i class="fas fa-plus-circle"></i> Manage Items
+            </a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_items %}
+            <div class="recent-items-table">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px">ID</th>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th style="width: 120px">Sell Price</th>
+                            <th style="width: 120px">Net Price</th>
+                            <th style="width: 100px">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_items %}
+                        <tr class="item-row animate-slide-in">
+                            <td class="text-center">
+                                <span class="badge-primary">#{{ item.Id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="item-icon-small">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <span class="fw-semibold">{{ item.Item_Name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge-info">
+                                    <i class="fas fa-folder me-1"></i> {{ item.Cat_Name }}
+                                </span>
+                            </td>
+                            <td class="text-success fw-semibold">
+                                Rs {{ "{:,.2f}".format(item.SellPrice|float) }}
+                            </td>
+                            <td class="text-muted">
+                                Rs {{ "{:,.2f}".format(item.NetPrice|float) }}
+                            </td>
+                            <td>
+                                {% if item.Stock > 0 %}
+                                <span class="stock-badge-positive">
+                                    <i class="fas fa-check-circle"></i> {{ item.Stock }} units
+                                </span>
+                                {% else %}
+                                <span class="stock-badge-zero">
+                                    <i class="fas fa-exclamation-triangle"></i> Out of stock
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-box-open fa-4x mb-3" style="color: var(--gray-light);"></i>
+                    <h5 class="text-muted">No items found</h5>
+                    <p class="text-muted small">Start by adding your first item</p>
+                    <a href="{{ url_for('manage_Itam') }}" class="btn-primary-custom mt-2">
+                        <i class="fas fa-plus-circle"></i> Add Item
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dashboard Specific Styles + Animations */
+    .welcome-section {
+        background: linear-gradient(135deg, white, #f8fafc);
+        border-radius: 24px;
+        padding: 20px 28px;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+    
+    .kpi-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .kpi-mini-card:hover .kpi-icon {
+        transform: scale(1.05) rotate(2deg);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    
+    .quick-actions-card {
+        background: white;
+        border-radius: 20px;
+        padding: 16px 24px;
+        border: 1px solid var(--gray-light);
+        transition: all 0.3s ease;
+    }
+    
+    .quick-actions-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+    
+    .action-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .recent-items-table {
+        max-height: 450px;
+        overflow: auto;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .item-icon-small {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary-bg), #e0e7ff);
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        transition: transform 0.2s;
+    }
+    
+    .item-row:hover .item-icon-small {
+        transform: scale(1.1);
+    }
+    
+    .badge-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .stock-badge-positive {
+        background: #d1fae5;
+        color: #065f46;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+    }
+    
+    .stock-badge-zero {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .item-row {
+        transition: all 0.2s ease;
+    }
+    
+    .item-row:hover {
+        background: var(--gray-bg);
+        transform: scale(1.002);
+    }
+    
+    .empty-state {
+        padding: 60px 20px;
+    }
+    
+    /* Animation keyframes */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); background-color: rgba(99,102,241,0.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease forwards;
+        opacity: 0;
+    }
+    
+    .animate-slide-in {
+        animation: slideInLeft 0.4s ease forwards;
+        opacity: 0;
+    }
+    
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Stagger children animations */
+    .item-row:nth-child(1) { animation-delay: 0.05s; }
+    .item-row:nth-child(2) { animation-delay: 0.10s; }
+    .item-row:nth-child(3) { animation-delay: 0.15s; }
+    .item-row:nth-child(4) { animation-delay: 0.20s; }
+    .item-row:nth-child(5) { animation-delay: 0.25s; }
+    .item-row:nth-child(6) { animation-delay: 0.30s; }
+    .item-row:nth-child(7) { animation-delay: 0.35s; }
+    .item-row:nth-child(8) { animation-delay: 0.40s; }
+    .item-row:nth-child(9) { animation-delay: 0.45s; }
+    .item-row:nth-child(10) { animation-delay: 0.50s; }
+    
+    @media (max-width: 768px) {
+        .welcome-section { padding: 16px 20px; }
+        .quick-actions-card { padding: 12px 16px; }
+        .btn-outline-custom.btn-sm { padding: 6px 12px; font-size: 11px; }
+        .kpi-icon { width: 45px; height: 45px; font-size: 20px; }
+        .kpi-mini-card h2 { font-size: 22px; }
+        .recent-items-table td, .recent-items-table th { padding: 10px; font-size: 12px; }
+        .stock-badge-positive, .stock-badge-zero { padding: 3px 8px; font-size: 10px; }
+    }
+    
+    @media (max-width: 576px) {
+        .kpi-mini-card { text-align: center; }
+        .kpi-mini-card .d-flex { flex-direction: column; text-align: center; }
+        .kpi-icon { margin-top: 10px; }
+    }
+</style>
+
+<script>
+    // Number counter animation
+    function animateCounters() {
+        const counters = document.querySelectorAll('.counter');
+        const creditCounter = document.querySelector('.credit-counter');
+        
+        const animate = (element, isCredit = false) => {
+            let target = parseFloat(element.getAttribute('data-target'));
+            if (isNaN(target)) target = 0;
+            let current = 0;
+            const increment = target / 50;
+            const updateCounter = () => {
+                current += increment;
+                if (current < target) {
+                    if (isCredit) {
+                        element.innerText = 'Rs ' + current.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    } else {
+                        element.innerText = Math.floor(current);
+                    }
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    if (isCredit) {
+                        element.innerText = 'Rs ' + target.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    } else {
+                        element.innerText = target;
+                    }
+                }
+            };
+            updateCounter();
+        };
+        
+        counters.forEach(counter => animate(counter, false));
+        if (creditCounter) animate(creditCounter, true);
+    }
+    
+    // Run counter when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate numbers
+        setTimeout(animateCounters, 200);
+        
+        // Hover effects for action buttons (already in CSS)
+        const quickBtns = document.querySelectorAll('.action-btn');
+        quickBtns.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px)';
+            });
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Welcome toast on first visit of the day
+        const lastVisit = localStorage.getItem('last_visit_date');
+        const today = new Date().toDateString();
+        if (lastVisit !== today) {
+            setTimeout(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Welcome back! Ready to manage your inventory?', 'info', 'Good to see you!');
+                }
+            }, 800);
+            localStorage.setItem('last_visit_date', today);
+        }
+        
+        // Add a subtle fade-in effect for table rows
+        const rows = document.querySelectorAll('.item-row');
+        rows.forEach((row, index) => {
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.style.transition = 'opacity 0.3s ease';
+                row.style.opacity = '1';
+            }, index * 50);
+        });
+    });
+</script>
+{% endblock %}

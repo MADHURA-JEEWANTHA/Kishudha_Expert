@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}Multi Stock Entry{% endblock %}
+
+{% block page_title %}{{ name }} Entry{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Modern Header -->
+    <div class="d-flex flex-wrap flex-md-nowrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-layer-group me-2" style="color: var(--primary);"></i>
+                {{ name }} Stock Entry
+            </h4>
+            <p class="text-muted small mb-0">Add stock for multiple items at once</p>
+        </div>
+        <a href="{{ url_for('stock') }}" class="btn-outline-custom">
+            <i class="fas fa-arrow-left"></i> Back to Stock
+        </a>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="card-modern fade-in-up">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                Stock Entry Form
+            </h5>
+            <span class="badge-info">
+                <i class="fas fa-info-circle"></i> Fill details for each item
+            </span>
+        </div>
+        
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('save_multi_stock') }}" id="multiStockForm">
+                <div class="table-responsive">
+                    <table class="table-modern" id="stockTable">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px">Category</th>
+                                <th style="min-width: 200px">Item</th>
+                                <th style="min-width: 180px">Price Update</th>
+                                <th style="min-width: 200px">Price Details</th>
+                                <th style="min-width: 120px">Quantity</th>
+                                <th style="width: 60px">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody">
+                            <!-- Template Row -->
+                            <tr class="stock-row" data-invalid="0">
+                                <td>
+                                    <select name="category_id[]" class="form-select-modern category" required>
+                                        <option value="">-- Select Category --</option>
+                                        {% for c in Categorys %}
+                                        <option value="{{ c.Id }}">{{ c.Cat_Name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="item_id[]" class="form-select-modern item" required disabled>
+                                        <option value="">-- First Select Category --</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="price_update_id[]" class="form-select-modern priceUpdate" required>
+                                        <option value="">-- Select Price Update --</option>
+                                        {% for p in PriceUpdates %}
+                                        <option value="{{ p.Id }}">{{ p.Date }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="price-details-card">
+                                        <div class="price-item">
+                                            <span class="price-label">Net:</span>
+                                            <span class="price-value netPrice">0.00</span>
+                                        </div>
+                                        <div class="price-item">
+                                            <span class="price-label">Sell:</span>
+                                            <span class="price-value sellPrice">0.00</span>
+                                        </div>
+                                        <div class="price-item">
+                                            <span class="price-label">MRP:</span>
+                                            <span class="price-value mrpPrice">0.00</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" name="qty[]" class="form-control-modern qty-input" 
+                                           placeholder="Quantity" min="1" step="1" required disabled>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn-remove remove" title="Remove Row">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-3 mt-4 pt-3 border-top">
+                    <button type="button" class="btn-primary-custom" id="addRowBtn">
+                        <i class="fas fa-plus-circle"></i> Add New Row
+                    </button>
+                    <button type="submit" class="btn-primary-custom" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-save"></i> Save All Stock
+                    </button>
+                    <button type="button" class="btn-outline-custom" onclick="resetAllRows()">
+                        <i class="fas fa-undo-alt"></i> Reset All
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Multi Stock Specific Styles */
+    .price-details-card {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        background: var(--gray-bg);
+        padding: 10px 14px;
+        border-radius: 12px;
+    }
+    
+    .price-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+    }
+    
+    .price-label {
+        font-weight: 600;
+        color: var(--gray);
+    }
+    
+    .price-value {
+        font-weight: 700;
+        color: var(--primary);
+        background: white;
+        padding: 2px 8px;
+        border-radius: 20px;
+        min-width: 70px;
+        text-align: center;
+    }
+    
+    .stock-row {
+        transition: var(--transition);
+    }
+    
+    .stock-row:hover {
+        background: var(--gray-bg);
+    }
+    
+    .stock-row.invalid {
+        background: linear-gradient(90deg, #fef2f2, #fee2e2);
+        border-left: 3px solid var(--danger);
+    }
+    
+    .stock-row.invalid .price-value {
+        background: #fee2e2;
+        color: var(--danger);
+    }
+    
+    .btn-remove {
+        background: none;
+        border: none;
+        color: var(--gray);
+        font-size: 18px;
+        cursor: pointer;
+        transition: var(--transition);
+        padding: 8px;
+        border-radius: 8px;
+    }
+    
+    .btn-remove:hover {
+        color: var(--danger);
+        background: #fee2e2;
+    }
+    
+    .qty-input:disabled {
+        background: var(--gray-bg);
+        cursor: not-allowed;
+    }
+    
+    .form-select-modern:disabled {
+        background: var(--gray-bg);
+        cursor: not-allowed;
+    }
+    
+    .table-modern td {
+        vertical-align: middle;
+    }
+    
+    @media (max-width: 768px) {
+        .price-details-card {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .price-item {
+            justify-content: space-between;
+        }
+        .price-value {
+            min-width: 60px;
+        }
+        .table-modern th,
+        .table-modern td {
+            padding: 10px;
+            font-size: 12px;
+        }
+    }
+</style>
+
+<script>
+    // Clone template row function
+    function getTemplateRow() {
+        const tbody = document.getElementById('tbody');
+        const templateRow = tbody.querySelector('.stock-row');
+        const newRow = templateRow.cloneNode(true);
+        
+        // Reset all values
+        newRow.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
+            if (select.classList.contains('item')) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">-- First Select Category --</option>';
+            }
+        });
+        
+        newRow.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            if (input.classList.contains('qty-input')) {
+                input.disabled = true;
+            }
+        });
+        
+        newRow.querySelector('.netPrice').innerText = '0.00';
+        newRow.querySelector('.sellPrice').innerText = '0.00';
+        newRow.querySelector('.mrpPrice').innerText = '0.00';
+        
+        newRow.classList.remove('invalid');
+        newRow.setAttribute('data-invalid', '0');
+        
+        return newRow;
+    }
+    
+    // Add new row
+    function addRow() {
+        const tbody = document.getElementById('tbody');
+        const newRow = getTemplateRow();
+        tbody.appendChild(newRow);
+        showToast('New row added', 'info', 'Ready');
+        
+        // Auto-scroll to new row
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // Reset all rows to first row only
+    function resetAllRows() {
+        const tbody = document.getElementById('tbody');
+        const rows = tbody.querySelectorAll('.stock-row');
+        
+        // Remove all rows except first
+        for (let i = rows.length - 1; i > 0; i--) {
+            rows[i].remove();
+        }
+        
+        // Reset first row
+        const firstRow = rows[0];
+        firstRow.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
+            if (select.classList.contains('item')) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">-- First Select Category --</option>';
+            }
+        });
+        firstRow.querySelectorAll('input').forEach(input => {
+            input.value = '';
+            input.disabled = true;
+        });
+        firstRow.querySelector('.netPrice').innerText = '0.00';
+        firstRow.querySelector('.sellPrice').innerText = '0.00';
+        firstRow.querySelector('.mrpPrice').innerText = '0.00';
+        firstRow.classList.remove('invalid');
+        firstRow.setAttribute('data-invalid', '0');
+        
+        showToast('All rows reset', 'info', 'Form cleared');
+    }
+    
+    // Load items based on category
+    async function loadItems(categorySelect, itemSelect) {
+        const categoryId = categorySelect.value;
+        
+        if (!categoryId) {
+            itemSelect.disabled = true;
+            itemSelect.innerHTML = '<option value="">-- First Select Category --</option>';
+            return;
+        }
+        
+        itemSelect.disabled = true;
+        itemSelect.innerHTML = '<option value="">Loading...</option>';
+        
+        try {
+            const response = await fetch(`/get_items/${categoryId}`);
+            const items = await response.json();
+            
+            itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+            items.forEach(item => {
+                itemSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+            });
+            itemSelect.disabled = false;
+        } catch (error) {
+            console.error('Error loading items:', error);
+            itemSelect.innerHTML = '<option value="">Error loading items</option>';
+            showToast('Failed to load items', 'error');
+        }
+    }
+    
+    // Load price information
+    async function loadPrice(row) {
+        const itemSelect = row.querySelector('.item');
+        const priceUpdateSelect = row.querySelector('.priceUpdate');
+        const itemId = itemSelect.value;
+        const updateId = priceUpdateSelect.value;
+        
+        const netSpan = row.querySelector('.netPrice');
+        const sellSpan = row.querySelector('.sellPrice');
+        const mrpSpan = row.querySelector('.mrpPrice');
+        const qtyInput = row.querySelector('.qty-input');
+        
+        if (!itemId || !updateId) {
+            netSpan.innerText = '0.00';
+            sellSpan.innerText = '0.00';
+            mrpSpan.innerText = '0.00';
+            qtyInput.disabled = true;
+            qtyInput.value = '';
+            row.classList.remove('invalid');
+            row.setAttribute('data-invalid', '0');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/get_multi_price/${itemId}/${updateId}`);
+            const data = await response.json();
+            
+            if (!data.status || data.net == null || data.sell == null || data.mrp == null) {
+                netSpan.innerText = 'N/A';
+                sellSpan.innerText = 'N/A';
+                mrpSpan.innerText = 'N/A';
+                qtyInput.disabled = true;
+                qtyInput.value = '';
+                row.classList.add('invalid');
+                row.setAttribute('data-invalid', '1');
+                showToast('Price information not available', 'warning');
+                return;
+            }
+            
+            netSpan.innerText = parseFloat(data.net).toLocaleString();
+            sellSpan.innerText = parseFloat(data.sell).toLocaleString();
+            mrpSpan.innerText = parseFloat(data.mrp).toLocaleString();
+            
+            qtyInput.disabled = false;
+            qtyInput.placeholder = 'Enter quantity';
+            
+            row.classList.remove('invalid');
+            row.setAttribute('data-invalid', '0');
+            
+        } catch (error) {
+            console.error('Error loading price:', error);
+            netSpan.innerText = 'Error';
+            sellSpan.innerText = 'Error';
+            mrpSpan.innerText = 'Error';
+            qtyInput.disabled = true;
+            row.classList.add('invalid');
+            row.setAttribute('data-invalid', '1');
+        }
+    }
+    
+    // Validate row before submit
+    function validateRow(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const isInvalid = row.getAttribute('data-invalid') === '1';
+        const qty = parseInt(qtyInput.value);
+        
+        if (!isInvalid && qtyInput.disabled === false && qty > 0) {
+            return true;
+        }
+        
+        if (!isInvalid && qtyInput.disabled === false && (!qty || qty <= 0)) {
+            showToast('Please enter a valid quantity', 'warning');
+            qtyInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        return false;
+    }
+    
+    // Event Delegation for dynamic rows
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Category change event
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('category')) {
+                const row = e.target.closest('.stock-row');
+                const itemSelect = row.querySelector('.item');
+                loadItems(e.target, itemSelect);
+                
+                // Reset price display
+                row.querySelector('.netPrice').innerText = '0.00';
+                row.querySelector('.sellPrice').innerText = '0.00';
+                row.querySelector('.mrpPrice').innerText = '0.00';
+                const qtyInput = row.querySelector('.qty-input');
+                qtyInput.disabled = true;
+                qtyInput.value = '';
+                row.classList.remove('invalid');
+                row.setAttribute('data-invalid', '0');
+            }
+            
+            if (e.target.classList.contains('item') || e.target.classList.contains('priceUpdate')) {
+                const row = e.target.closest('.stock-row');
+                loadPrice(row);
+            }
+        });
+        
+        // Remove row event
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.remove')) {
+                const rows = document.querySelectorAll('#tbody .stock-row');
+                if (rows.length > 1) {
+                    e.target.closest('.stock-row').remove();
+                    showToast('Row removed', 'info');
+                } else {
+                    showToast('Cannot remove the last row', 'warning');
+                }
+            }
+        });
+        
+        // Add row button
+        const addBtn = document.getElementById('addRowBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                addRow();
+            });
+        }
+        
+        // Form validation before submit
+        const form = document.getElementById('multiStockForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const rows = document.querySelectorAll('#tbody .stock-row');
+                let validRows = 0;
+                let invalidRows = 0;
+                
+                rows.forEach(row => {
+                    if (validateRow(row)) {
+                        validRows++;
+                    } else if (row.getAttribute('data-invalid') === '1') {
+                        invalidRows++;
+                    }
+                });
+                
+                if (validRows === 0 && invalidRows > 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Valid Entries',
+                        html: `<p>${invalidRows} row(s) have invalid or missing price information.</p>
+                               <p class="text-muted">Please fix these rows before submitting.</p>`,
+                        confirmButtonColor: '#6366f1'
+                    });
+                } else if (invalidRows > 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Invalid Rows Found',
+                        html: `<p>${invalidRows} row(s) have NULL or invalid prices.</p>
+                               <p>${validRows} row(s) are valid and ready to save.</p>
+                               <p class="text-muted">Do you want to continue with only the valid rows?</p>`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, save valid rows',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Remove invalid rows before submit
+                            rows.forEach(row => {
+                                if (row.getAttribute('data-invalid') === '1') {
+                                    row.remove();
+                                }
+                            });
+                            showLoading();
+                            form.submit();
+                        }
+                    });
+                } else if (validRows > 0) {
+                    showLoading();
+                } else {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Entries',
+                        text: 'Please add at least one valid stock entry',
+                        confirmButtonColor: '#6366f1'
+                    });
+                }
+            });
+        }
+        
+        // Quantity input validation on change
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('qty-input')) {
+                const row = e.target.closest('.stock-row');
+                const qty = parseInt(e.target.value);
+                if (isNaN(qty) || qty <= 0) {
+                    e.target.classList.add('is-invalid');
+                } else {
+                    e.target.classList.remove('is-invalid');
+                }
+            }
+        });
+        
+        // Initial setup for first row
+        const firstRow = document.querySelector('#tbody .stock-row');
+        if (firstRow) {
+            const firstCategory = firstRow.querySelector('.category');
+            const firstItem = firstRow.querySelector('.item');
+            if (firstCategory && firstCategory.value) {
+                loadItems(firstCategory, firstItem);
+            }
+        }
+    });
+    
+    // Helper: remove invalid row class on input
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('qty-input')) {
+            e.target.classList.remove('is-invalid');
+        }
+    });
+</script>
+{% endblock %}

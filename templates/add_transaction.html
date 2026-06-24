@@ -1,0 +1,953 @@
+{% extends "base.html" %}
+
+{% block title %}Add Transaction{% endblock %}
+
+{% block page_title %}Add Transaction{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <!-- Header Section -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="fas fa-plus-circle me-2" style="color: var(--primary);"></i>
+                        Add Transaction
+                    </h4>
+                    <p class="text-muted small mb-0">Create a new credit invoice or record a payment</p>
+                </div>
+                <a href="{{ url_for('transactions') }}" class="btn-outline-custom">
+                    <i class="fas fa-arrow-left"></i> Back to Transactions
+                </a>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card-modern fade-in-up">
+                <div class="card-header-modern">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Transaction Details
+                    </h5>
+                    <span class="badge-info">
+                        <i class="fas fa-info-circle"></i> Fill in the information below
+                    </span>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" id="transactionForm" action="/add_transaction">
+                        <div class="row g-4">
+                            <!-- Customer Selection -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-user me-1"></i> Customer
+                                </label>
+                                <select name="customer" id="customerSelect" class="form-select-modern" required>
+                                    <option value="">-- Select Customer --</option>
+                                    {% for c in customers %}
+                                    <option value="{{ c.id }}" {% if request.args.get('customer') == c.id|string %}selected{% endif %}>
+                                        {{ c.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Overpayment Alert -->
+                                <div id="overpaymentBox" class="alert alert-info mt-3" style="display: none;">
+                                    <i class="fas fa-cash-stack me-2"></i>
+                                    <strong>Overpayment Available:</strong> 
+                                    <span id="overpaymentValue">Rs. 0.00</span>
+                                    <small class="d-block mt-1">This will be automatically applied to new credits</small>
+                                </div>
+                            </div>
+
+                            <!-- Transaction Type Selector -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-tag me-1"></i> Transaction Type
+                                </label>
+                                <div class="type-selector">
+                                    <div class="d-flex gap-3">
+                                        <label class="type-option" style="flex: 1;">
+                                            <input type="radio" name="type" value="credit" id="typeCredit" checked 
+                                                   onchange="toggleTransactionFields()" class="d-none">
+                                            <div class="type-card text-center p-3 rounded-3 border credit-card">
+                                                <i class="fas fa-file-invoice fa-2x mb-2" style="color: var(--primary);"></i>
+                                                <div class="fw-semibold">Credit (Invoice)</div>
+                                                <small class="text-muted">Sell on credit / New invoice</small>
+                                            </div>
+                                        </label>
+                                        <label class="type-option" style="flex: 1;">
+                                            <input type="radio" name="type" value="debit" id="typeDebit" 
+                                                   onchange="toggleTransactionFields()" class="d-none">
+                                            <div class="type-card text-center p-3 rounded-3 border debit-card">
+                                                <i class="fas fa-money-bill-wave fa-2x mb-2" style="color: var(--success);"></i>
+                                                <div class="fw-semibold">Debit (Payment)</div>
+                                                <small class="text-muted">Receive cash / Record payment</small>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Amount -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-rupee-sign me-1"></i> Amount <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group-custom">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input type="text" name="amount" id="amountInput" 
+                                           class="form-control-modern" required
+                                           placeholder="0.00">
+                                </div>
+                                <div id="amountHelp" class="small text-muted mt-1"></div>
+                            </div>
+
+                            <!-- Date -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-calendar-alt me-1"></i> Transaction Date
+                                </label>
+                                <input type="date" name="date" value="{{ today }}" 
+                                       class="form-control-modern" required>
+                            </div>
+
+                            <!-- Day Limit (Credit only) -->
+                            <div class="col-md-6" id="dayLimitBox">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-hourglass-half me-1"></i> Day Limit (Due Period)
+                                </label>
+                                <div class="input-group-custom">
+                                    <input type="number" name="days" id="daysInput" 
+                                           class="form-control-modern" placeholder="Days until due">
+                                    <span class="input-group-text">days</span>
+                                </div>
+                                <small class="text-muted">Due date = Transaction date + Days</small>
+                            </div>
+
+                            <!-- Payment Method (Debit only) -->
+                            <div class="col-md-6" id="paymentMethodBox" style="display: none;">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-credit-card me-1"></i> Payment Method
+                                </label>
+                                <select name="payment_method" class="form-select-modern">
+                                    <option value="">-- Select Payment Method --</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="cheque">Cheque</option>
+                                    <option value="card">Card Payment</option>
+                                </select>
+                            </div>
+
+                            <!-- Reference -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-hashtag me-1"></i> Reference / Invoice No <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="payment_reference" id="referenceInput" 
+                                       class="form-control-modern" placeholder="Invoice number or cheque number" required>
+                                <div id="referenceError" class="text-danger small mt-1" style="display: none;"></div>
+                                <div id="referenceSuccess" class="text-success small mt-1" style="display: none;"></div>
+                            </div>
+
+                            <!-- Note -->
+                            <div class="col-12">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-sticky-note me-1"></i> Note (Optional)
+                                </label>
+                                <textarea name="note" class="form-control-modern" rows="3" 
+                                          placeholder="Add any additional notes about this transaction..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Credit Selection Table (for Debit payments) -->
+                        <div id="creditBox" class="mt-4" style="display: none;">
+                            <div class="credit-selection-section">
+                                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-link me-2" style="color: var(--primary);"></i>
+                                        Select Invoices to Settle
+                                    </h6>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge-info" id="selectedCountBadge">0 selected</span>
+                                        <span class="badge-info" id="totalAvailableBadge">Total Available: Rs. 0.00</span>
+                                    </div>
+                                </div>
+                                
+                                {% if credits %}
+                                <div class="credit-table-container">
+                                    <table class="table-modern credit-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50px; text-align: center;">
+                                                    <input type="checkbox" id="selectAllCheckbox" class="select-all-check" title="Select All">
+                                                </th>
+                                                <th>Date</th>
+                                                <th>Reference</th>
+                                                <th>Original Amount</th>
+                                                <th>Settled</th>
+                                                <th>Balance Due</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="creditTableBody">
+                                            {% for c in credits %}
+                                            <tr class="credit-row" data-credit-id="{{ c.id }}" 
+                                                data-balance="{{ c.amount - c.settled }}">
+                                                <td style="text-align: center;">
+                                                    <input type="checkbox" name="credit_ids" value="{{ c.id }}" 
+                                                           class="credit-check" data-balance="{{ c.amount - c.settled }}">
+                                                </td>
+                                                <td>{{ c.date }}</td>
+                                                <td><code>{{ c.payment_reference or '—' }}</code></td>
+                                                <td class="fw-semibold">Rs. {{ "{:,.2f}".format(c.amount) }}</td>
+                                                <td class="text-success">Rs. {{ "{:,.2f}".format(c.settled) }}</td>
+                                                <td class="fw-bold balance-cell">
+                                                    Rs. {{ "{:,.2f}".format(c.amount - c.settled) }}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Selection Summary with Settlement Distribution -->
+                                <div id="selectedTotalBox" class="selected-total-box mt-3" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                            <div>
+                                                <i class="fas fa-calculator me-2"></i>
+                                                <strong>Selected Total:</strong> 
+                                                <span id="selectedTotalAmount">Rs. 0.00</span>
+                                            </div>
+                                            <div>
+                                                <span id="settlementStatus" class="badge-info">Ready</span>
+                                            </div>
+                                        </div>
+                                        <div id="settlementDetails" class="mt-2 small settlement-preview"></div>
+                                        <div id="validationMsg" class="mt-2 small" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    No outstanding credits found for this customer. Payment will be recorded as advance.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex flex-wrap justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <a href="{{ url_for('transactions') }}" class="btn-outline-custom">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn-primary-custom" id="submitBtn">
+                                <i class="fas fa-save"></i> Save Transaction
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Modal -->
+<div class="modal fade" id="processingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 class="mb-2">Processing Transaction...</h5>
+                <p class="text-muted mb-0">Please wait while we save your transaction.</p>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .type-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: white;
+    }
+    
+    .type-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .type-option input:checked + .type-card,
+    .type-option input:checked ~ .type-card {
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        border-color: var(--primary) !important;
+        border-width: 2px !important;
+    }
+    
+    .credit-selection-section {
+        background: var(--gray-bg);
+        border-radius: 20px;
+        padding: 20px;
+    }
+    
+    .credit-table-container {
+        max-height: 350px;
+        overflow: auto;
+        border-radius: 16px;
+    }
+    
+    .credit-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .credit-table th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        color: white;
+        z-index: 10;
+        padding: 12px 16px;
+    }
+    
+    .credit-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--gray-light);
+        vertical-align: middle;
+    }
+    
+    .credit-row {
+        transition: var(--transition);
+        cursor: pointer;
+    }
+    
+    .credit-row:hover {
+        background: #e0e7ff;
+    }
+    
+    .credit-row.selected {
+        background: #d1fae5;
+    }
+    
+    .select-all-check {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+    
+    .credit-check {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+    
+    .selected-total-box {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .input-group-custom .input-group-text {
+        background: var(--gray-bg);
+        border: none;
+        padding: 12px 16px;
+        font-weight: 600;
+        color: var(--gray);
+    }
+    
+    code {
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+    }
+    
+    .settlement-preview {
+        background: #e0e7ff;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-top: 8px;
+        font-size: 12px;
+    }
+    
+    .settlement-preview strong {
+        font-size: 12px;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 768px) {
+        .type-card {
+            padding: 12px !important;
+        }
+        .type-card i {
+            font-size: 20px !important;
+        }
+        .credit-table th,
+        .credit-table td {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        code {
+            font-size: 10px;
+        }
+    }
+</style>
+
+<script>
+    // ========================================
+    // DOM Elements
+    // ========================================
+    const customerSelect = document.getElementById('customerSelect');
+    const typeCredit = document.getElementById('typeCredit');
+    const typeDebit = document.getElementById('typeDebit');
+    const dayLimitBox = document.getElementById('dayLimitBox');
+    const paymentMethodBox = document.getElementById('paymentMethodBox');
+    const creditBox = document.getElementById('creditBox');
+    const amountInput = document.getElementById('amountInput');
+    const referenceInput = document.getElementById('referenceInput');
+    const referenceError = document.getElementById('referenceError');
+    const referenceSuccess = document.getElementById('referenceSuccess');
+    const transactionForm = document.getElementById('transactionForm');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const selectedTotalBox = document.getElementById('selectedTotalBox');
+    const selectedTotalAmount = document.getElementById('selectedTotalAmount');
+    const selectedCountBadge = document.getElementById('selectedCountBadge');
+    const totalAvailableBadge = document.getElementById('totalAvailableBadge');
+    const settlementStatus = document.getElementById('settlementStatus');
+    const settlementDetails = document.getElementById('settlementDetails');
+    const validationMsg = document.getElementById('validationMsg');
+    const overpaymentBox = document.getElementById('overpaymentBox');
+    const overpaymentValue = document.getElementById('overpaymentValue');
+    
+    let referenceExists = false;
+    let totalAvailable = 0;
+    let creditData = [];
+    let referenceCheckTimeout = null;
+    let processingModal = null;
+    
+    // ========================================
+    // Utility Functions
+    // ========================================
+    function cleanNumber(value) {
+        if (!value || value === '') return '0';
+        return value.toString().replace(/,/g, '').replace(/Rs\./g, '').trim();
+    }
+    
+    function formatNumber(value) {
+        if (!value || value === '') return '';
+        let num = parseFloat(value.toString().replace(/,/g, ''));
+        if (isNaN(num)) return '';
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    // ========================================
+    // Initialize Processing Modal
+    // ========================================
+    function initProcessingModal() {
+        const modalElement = document.getElementById('processingModal');
+        if (modalElement) {
+            processingModal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
+        }
+    }
+    
+    function showProcessingModal() {
+        if (processingModal) {
+            processingModal.show();
+        }
+    }
+    
+    // ========================================
+    // Update Credit Data
+    // ========================================
+    function updateCreditData() {
+        creditData = [];
+        totalAvailable = 0;
+        
+        document.querySelectorAll('.credit-row').forEach(row => {
+            const cb = row.querySelector('.credit-check');
+            const balance = parseFloat(cb?.dataset.balance || 0);
+            const amount = parseFloat(row.dataset.amount || 0);
+            const settled = parseFloat(row.dataset.settled || 0);
+            const creditId = row.dataset.creditId;
+            
+            if (cb) {
+                creditData.push({
+                    id: creditId,
+                    balance: balance,
+                    amount: amount,
+                    settled: settled,
+                    row: row,
+                    checkbox: cb
+                });
+                totalAvailable += balance;
+            }
+        });
+        
+        if (totalAvailableBadge) {
+            totalAvailableBadge.innerHTML = 'Total Available: Rs. ' + totalAvailable.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        
+        if (selectedCountBadge && creditData.length > 0) {
+            selectedCountBadge.innerHTML = creditData.length + ' total';
+        }
+    }
+    
+    // ========================================
+    // Calculate Settlement Distribution
+    // ========================================
+    function calculateSettlementDistribution(debitAmount) {
+        let remaining = debitAmount;
+        const distribution = [];
+        
+        for (let i = 0; i < creditData.length; i++) {
+            const credit = creditData[i];
+            if (remaining <= 0) {
+                distribution.push({
+                    ...credit,
+                    settledAmount: 0,
+                    remainingBalance: credit.balance,
+                    status: 'none'
+                });
+            } else if (remaining >= credit.balance) {
+                distribution.push({
+                    ...credit,
+                    settledAmount: credit.balance,
+                    remainingBalance: 0,
+                    status: 'full'
+                });
+                remaining -= credit.balance;
+            } else {
+                distribution.push({
+                    ...credit,
+                    settledAmount: remaining,
+                    remainingBalance: credit.balance - remaining,
+                    status: 'partial'
+                });
+                remaining = 0;
+            }
+        }
+        
+        return { distribution, overpayment: remaining };
+    }
+    
+    // ========================================
+    // Update Settlement Preview
+    // ========================================
+    function updateSettlementPreview() {
+        const debitAmount = parseFloat(cleanNumber(amountInput?.value || '0'));
+        
+        if (creditData.length === 0) {
+            if (settlementDetails) settlementDetails.innerHTML = '';
+            if (selectedTotalBox) selectedTotalBox.style.display = 'none';
+            return;
+        }
+        
+        if (isNaN(debitAmount) || debitAmount <= 0) {
+            if (settlementDetails) settlementDetails.innerHTML = '<i class="fas fa-info-circle"></i> Enter amount to see settlement distribution';
+            if (selectedTotalBox) selectedTotalBox.style.display = 'block';
+            return;
+        }
+        
+        const { distribution, overpayment } = calculateSettlementDistribution(debitAmount);
+        
+        let detailsHtml = '<strong><i class="fas fa-chart-line"></i> Settlement Distribution:</strong><br>';
+        
+        distribution.forEach((d, idx) => {
+            if (d.status === 'full') {
+                detailsHtml += `<span class="text-success">✓ Credit ${idx + 1}: Rs. ${d.settledAmount.toLocaleString()} (Fully Settled)</span><br>`;
+            } else if (d.status === 'partial') {
+                detailsHtml += `<span class="text-warning">◉ Credit ${idx + 1}: Rs. ${d.settledAmount.toLocaleString()} settled, Rs. ${d.remainingBalance.toLocaleString()} remaining</span><br>`;
+            } else {
+                detailsHtml += `<span class="text-muted">○ Credit ${idx + 1}: Rs. 0 settled, Rs. ${d.balance.toLocaleString()} remaining</span><br>`;
+            }
+        });
+        
+        if (overpayment > 0) {
+            detailsHtml += `<br><span class="text-info"><i class="fas fa-cash-stack"></i> Overpayment: Rs. ${overpayment.toLocaleString()} (will be recorded as advance)</span>`;
+        }
+        
+        detailsHtml += `<br><small class="text-muted">Total Settled: Rs. ${(debitAmount - overpayment).toLocaleString()}</small>`;
+        
+        if (settlementDetails) settlementDetails.innerHTML = detailsHtml;
+        if (selectedTotalBox) selectedTotalBox.style.display = 'block';
+        
+        // Update selected total display
+        if (selectedTotalAmount) {
+            selectedTotalAmount.innerText = 'Rs. ' + totalAvailable.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        
+        // Update status badge
+        if (settlementStatus) {
+            if (debitAmount >= totalAvailable) {
+                if (debitAmount > totalAvailable) {
+                    settlementStatus.innerHTML = '<i class="fas fa-check-circle"></i> Full Settlement + Overpayment';
+                } else {
+                    settlementStatus.innerHTML = '<i class="fas fa-check-circle"></i> Exact Full Settlement';
+                }
+                settlementStatus.style.background = '#d1fae5';
+                settlementStatus.style.color = '#065f46';
+            } else if (debitAmount > 0) {
+                settlementStatus.innerHTML = '<i class="fas fa-chart-line"></i> Partial Settlement';
+                settlementStatus.style.background = '#fed7aa';
+                settlementStatus.style.color = '#92400e';
+            } else {
+                settlementStatus.innerHTML = '<i class="fas fa-info-circle"></i> Ready';
+                settlementStatus.style.background = '#dbeafe';
+                settlementStatus.style.color = '#1e40af';
+            }
+        }
+    }
+    
+    // ========================================
+    // Update Selected Total
+    // ========================================
+    function updateSelectedTotal() {
+        const selected = document.querySelectorAll('.credit-check:checked');
+        const count = selected.length;
+        
+        if (selectedCountBadge) {
+            selectedCountBadge.innerHTML = count + ' selected';
+        }
+        
+        if (count === 0) {
+            if (selectedTotalBox && creditData.length === 0) selectedTotalBox.style.display = 'none';
+            return;
+        }
+        
+        let total = 0;
+        selected.forEach(cb => {
+            total += parseFloat(cb.dataset.balance || 0);
+        });
+        
+        if (selectedTotalBox) {
+            selectedTotalBox.style.display = 'block';
+            if (selectedTotalAmount) {
+                selectedTotalAmount.innerText = 'Rs. ' + total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            }
+        }
+    }
+    
+    // ========================================
+    // Reference Validation
+    // ========================================
+    async function checkReferenceExists(ref) {
+        if (!ref || ref.length < 2) return false;
+        
+        try {
+            const response = await fetch(`/check_reference?ref=${encodeURIComponent(ref)}`);
+            const data = await response.json();
+            return data.exists === true;
+        } catch (err) {
+            console.error('Reference check failed:', err);
+            return false;
+        }
+    }
+    
+    function setupReferenceValidation() {
+        if (!referenceInput) return;
+        
+        referenceInput.addEventListener('input', function() {
+            clearTimeout(referenceCheckTimeout);
+            const ref = this.value.trim();
+            
+            if (referenceError) referenceError.style.display = 'none';
+            if (referenceSuccess) referenceSuccess.style.display = 'none';
+            this.classList.remove('is-invalid', 'is-valid');
+            
+            if (ref.length < 2) {
+                referenceExists = false;
+                return;
+            }
+            
+            referenceCheckTimeout = setTimeout(async () => {
+                try {
+                    const exists = await checkReferenceExists(ref);
+                    referenceExists = exists;
+                    
+                    if (exists) {
+                        if (referenceError) {
+                            referenceError.style.display = 'block';
+                            referenceError.innerHTML = '<i class="fas fa-exclamation-circle"></i> This reference already exists!';
+                        }
+                        this.classList.add('is-invalid');
+                        if (referenceSuccess) referenceSuccess.style.display = 'none';
+                    } else {
+                        if (referenceSuccess) {
+                            referenceSuccess.style.display = 'block';
+                            referenceSuccess.innerHTML = '<i class="fas fa-check-circle"></i> Reference available';
+                        }
+                        this.classList.add('is-valid');
+                        if (referenceError) referenceError.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Reference validation error:', error);
+                }
+            }, 500);
+        });
+    }
+    
+    // ========================================
+    // Load Overpayment
+    // ========================================
+    async function loadOverpayment(customerId) {
+        if (!customerId) {
+            if (overpaymentBox) overpaymentBox.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/get_overpayment/${customerId}`);
+            const data = await response.json();
+            
+            if (data.overpayment && data.overpayment > 0) {
+                if (overpaymentBox) overpaymentBox.style.display = 'block';
+                if (overpaymentValue) {
+                    overpaymentValue.innerText = 'Rs. ' + data.overpayment.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+            } else {
+                if (overpaymentBox) overpaymentBox.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading overpayment:', error);
+        }
+    }
+    
+    // ========================================
+    // Toggle UI Based on Transaction Type
+    // ========================================
+    function toggleTransactionFields() {
+        const isCredit = typeCredit.checked;
+        
+        if (isCredit) {
+            if (dayLimitBox) dayLimitBox.style.display = 'block';
+            if (paymentMethodBox) paymentMethodBox.style.display = 'none';
+            if (creditBox) creditBox.style.display = 'none';
+            const daysInput = document.getElementById('daysInput');
+            if (daysInput) daysInput.required = true;
+        } else {
+            if (dayLimitBox) dayLimitBox.style.display = 'none';
+            if (paymentMethodBox) paymentMethodBox.style.display = 'block';
+            if (creditBox) creditBox.style.display = 'block';
+            const daysInput = document.getElementById('daysInput');
+            if (daysInput) daysInput.required = false;
+            
+            updateCreditData();
+            updateSettlementPreview();
+            updateSelectedTotal();
+        }
+    }
+    
+    // ========================================
+    // Select All Checkbox
+    // ========================================
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const allChecks = document.querySelectorAll('.credit-check');
+            allChecks.forEach(cb => {
+                cb.checked = this.checked;
+                const row = cb.closest('tr');
+                if (row) {
+                    if (this.checked) row.classList.add('selected');
+                    else row.classList.remove('selected');
+                }
+            });
+            updateSelectedTotal();
+            updateSettlementPreview();
+        });
+    }
+    
+    // ========================================
+    // Checkbox Change Handler
+    // ========================================
+    function handleCheckboxChange() {
+        const row = this.closest('tr');
+        if (row) {
+            if (this.checked) row.classList.add('selected');
+            else row.classList.remove('selected');
+        }
+        updateSelectedTotal();
+        updateSettlementPreview();
+        
+        if (selectAllCheckbox) {
+            const allChecks = document.querySelectorAll('.credit-check');
+            const allChecked = Array.from(allChecks).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    
+    function bindCheckboxEvents() {
+        document.querySelectorAll('.credit-check').forEach(cb => {
+            cb.removeEventListener('change', handleCheckboxChange);
+            cb.addEventListener('change', handleCheckboxChange);
+        });
+    }
+    
+    // ========================================
+    // Row Click Handler
+    // ========================================
+    function bindRowClickEvents() {
+        document.querySelectorAll('.credit-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const cb = this.querySelector('.credit-check');
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        cb.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+        });
+    }
+    
+    // ========================================
+    // Event Listeners
+    // ========================================
+    function initEventListeners() {
+        if (amountInput) {
+            amountInput.addEventListener('focus', function() {
+                this.value = cleanNumber(this.value);
+            });
+            
+            amountInput.addEventListener('blur', function() {
+                let num = parseFloat(cleanNumber(this.value));
+                if (!isNaN(num) && num > 0) {
+                    this.value = formatNumber(num);
+                } else {
+                    this.value = '';
+                }
+                if (typeDebit && typeDebit.checked) {
+                    updateSettlementPreview();
+                }
+            });
+            
+            amountInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9.]/g, '');
+                const helpSpan = document.getElementById('amountHelp');
+                if (helpSpan) {
+                    const val = parseFloat(this.value);
+                    if (!isNaN(val) && val > 0) {
+                        helpSpan.innerHTML = '<i class="fas fa-check-circle text-success"></i> Valid amount';
+                    } else {
+                        helpSpan.innerHTML = '<i class="fas fa-info-circle"></i> Enter a positive amount';
+                    }
+                }
+                if (typeDebit && typeDebit.checked) {
+                    updateSettlementPreview();
+                }
+            });
+        }
+        
+        if (customerSelect) {
+            customerSelect.addEventListener('change', function() {
+                const id = this.value;
+                loadOverpayment(id);
+                if (id) {
+                    window.location.href = '?customer=' + id;
+                }
+            });
+        }
+    }
+    
+    // ========================================
+    // Form Submit Handler
+    // ========================================
+    if (transactionForm) {
+        transactionForm.addEventListener('submit', async function(e) {
+            // Clean amount
+            if (amountInput) {
+                amountInput.value = cleanNumber(amountInput.value);
+            }
+            
+            const amount = parseFloat(amountInput?.value || 0);
+            const reference = referenceInput?.value.trim() || '';
+            
+            // Validate amount
+            if (isNaN(amount) || amount <= 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Amount',
+                    text: 'Please enter a valid amount greater than zero',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Validate customer
+            if (!customerSelect?.value) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Customer Required',
+                    text: 'Please select a customer',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Validate reference
+            if (!reference) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Reference Required',
+                    text: 'Please enter a reference number',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Check reference exists
+            if (reference.length > 1 && referenceExists) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Duplicate Reference',
+                    text: 'This reference already exists! Please use a different reference.',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Show processing modal
+            showProcessingModal();
+        });
+    }
+    
+    // ========================================
+    // DOMContentLoaded
+    // ========================================
+    document.addEventListener('DOMContentLoaded', function() {
+        initProcessingModal();
+        setupReferenceValidation();
+        toggleTransactionFields();
+        
+        const preSelected = customerSelect?.value;
+        if (preSelected) {
+            loadOverpayment(preSelected);
+        }
+        
+        updateCreditData();
+        updateSettlementPreview();
+        updateSelectedTotal();
+        bindCheckboxEvents();
+        bindRowClickEvents();
+        initEventListeners();
+    });
+</script>
+{% endblock %}

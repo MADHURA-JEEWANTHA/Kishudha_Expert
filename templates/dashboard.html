@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Credit Management{% endblock %}
+
+{% block page_title %}Credit Management{% endblock %}
+
+{% block content %}
+
+<style>
+    .kpi-card {
+        background: white;
+        border-radius: 24px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .kpi-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+    
+    .kpi-icon.primary { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #2563eb; }
+    .kpi-icon.success { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+    .kpi-icon.warning { background: linear-gradient(135deg, #fed7aa, #fde68a); color: #d97706; }
+    .kpi-icon.danger { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #dc2626; }
+    
+    .kpi-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+    
+    .kpi-label {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+    
+    .filter-bar {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 14px;
+        border-radius: 40px;
+        font-size: 12px;
+        font-weight: 600;
+        gap: 8px;
+    }
+    
+    .status-badge.paid { background: #d1fae5; color: #065f46; }
+    .status-badge.expired { background: #fee2e2; color: #991b1b; }
+    .status-badge.due-tomorrow { background: #fed7aa; color: #92400e; }
+    .status-badge.active { background: #dbeafe; color: #1e40af; }
+    
+    .credit-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .credit-table th {
+        background: #0f172a;
+        color: white;
+        padding: 14px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+    }
+    
+    .credit-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .credit-table tr {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .credit-table tr:hover {
+        background: #f8fafc;
+    }
+    
+    .amount-credit { color: #3b82f6; font-weight: 700; }
+    .amount-debit { color: #ef4444; font-weight: 700; }
+    
+    .table-scroll {
+        max-height: 550px;
+        overflow: auto;
+    }
+</style>
+
+<div class="animate-on-scroll">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Credit Management</h4>
+            <p class="text-muted small mb-0">Manage customer credits, payments, and overdue invoices</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('add_transaction') }}" class="btn-primary-custom">
+                <i class="fas fa-plus-circle"></i> New Transaction
+            </a>
+            <a href="{{ url_for('customers') }}" class="btn-outline-custom">
+                <i class="fas fa-users"></i> Customers
+            </a>
+            <a href="{{ url_for('export_receivable_report') }}" class="btn-outline-custom">
+                <i class="fas fa-file-excel"></i> Export
+            </a>
+        </div>
+    </div>
+    
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card" onclick="window.location.href='{{ url_for('add_transaction') }}'">
+                <div class="kpi-icon primary">
+                    <i class="fas fa-hand-holding-usd fa-2x"></i>
+                </div>
+                <div class="kpi-value">Rs. {{ total_credit | currency }}</div>
+                <div class="kpi-label">Total Credit (Invoices)</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-icon success">
+                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                </div>
+                <div class="kpi-value">Rs. {{ total_debit | currency }}</div>
+                <div class="kpi-label">Total Payments Received</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-icon warning">
+                    <i class="fas fa-wallet fa-2x"></i>
+                </div>
+                <div class="kpi-value">Rs. {{ total_balance | currency }}</div>
+                <div class="kpi-label">Outstanding Balance</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card">
+                <div class="kpi-icon danger">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <div class="kpi-value">Rs. {{ total_overdue | currency }}</div>
+                <div class="kpi-label">Overdue Amount</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="{{ url_for('dashboard') }}" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label-custom">Search Customer</label>
+                <div class="search-input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                           class="form-control" placeholder="Type customer name...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label-custom">Status Filter</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="Active" {% if request.args.get('status') == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Expired" {% if request.args.get('status') == 'Expired' %}selected{% endif %}>Over Due</option>
+                    <option value="Paid" {% if request.args.get('status') == 'Paid' %}selected{% endif %}>Paid</option>
+                    <option value="Due Tomorrow" {% if request.args.get('status') == 'Due Tomorrow' %}selected{% endif %}>Due Tomorrow</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn-primary-custom w-100">Apply Filter</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{{ url_for('dashboard') }}" class="btn-outline-custom w-100 d-block text-center">Reset</a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Credit Table -->
+    <div class="card-modern">
+        <div class="card-header-modern">
+            <h5 class="fw-bold mb-0">
+                <i class="fas fa-list-ul me-2" style="color: #ff6b35;"></i>
+                Credit Transactions
+            </h5>
+        </div>
+        
+        {% if data %}
+        <div class="table-scroll">
+            <table class="credit-table">
+                <thead>
+                    <tr class="text-center">
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Credit Amount</th>
+                        <th>Settled</th>
+                        <th>Balance</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in data %}
+                    <tr onclick="window.location.href='/ledger/{{ d.id }}'">
+                        <td class="text-center">{{ d.date }}</td>
+                        <td class="fw-semibold">{{ d.customer }}</td>
+                        <td class="amount-credit text-center">Rs. {{ d.credit | currency }}</td>
+                        <td class="amount-debit text-center">Rs. {{ d.debit | currency }}</td>
+                        <td class="fw-bold text-center {% if d.balance > 0 %}text-warning{% else %}text-success{% endif %}">
+                            Rs. {{ d.balance | currency }}
+                        </td>
+                        <td class="text-center">{{ d.due or '-' }}</td>
+                        <td class="text-center">
+                            {% if d.status == 'Paid' %}
+                            <span class="status-badge paid"><i class="fas fa-check-circle"></i> Paid</span>
+                            {% elif d.status == 'Expired' %}
+                            <span class="status-badge expired"><i class="fas fa-exclamation-triangle"></i> Over Due</span>
+                            {% elif d.status == 'Due Tomorrow' %}
+                            <span class="status-badge due-tomorrow"><i class="fas fa-clock"></i> Due Tomorrow</span>
+                            {% else %}
+                            <span class="status-badge active"><i class="fas fa-circle"></i> Active</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-header-modern" style="border-top: 1px solid #e2e8f0;">
+            <small class="text-muted">
+                <i class="fas fa-chart-line me-1"></i>
+                Showing <strong>{{ data|length }}</strong> credit transactions
+            </small>
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Click on any row to view detailed ledger
+            </small>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-credit-card" style="font-size: 48px; color: #cbd5e1;"></i>
+            <h5 class="mt-3">No Credit Records Found</h5>
+            <p class="text-muted">Start by adding a new credit transaction or customer</p>
+            <div class="d-flex gap-2 justify-content-center mt-3">
+                <a href="{{ url_for('add_transaction') }}" class="btn-primary-custom">Add Transaction</a>
+                <a href="{{ url_for('customers') }}" class="btn-outline-custom">Add Customer</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+</div>
+
+{% endblock %}

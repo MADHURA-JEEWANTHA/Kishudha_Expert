@@ -1,0 +1,675 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Management{% endblock %}
+
+{% block page_title %}Stock Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-database me-2" style="color: var(--primary);"></i>
+                Stock Management
+            </h4>
+            <p class="text-muted small mb-0">Manage inventory levels and stock movements</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                <i class="fas fa-plus-circle"></i> Add Stock
+            </button>
+            <a href="{{ url_for('multi_stock') }}?name=Multi Stock" class="btn-primary-custom" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                <i class="fas fa-layer-group"></i> Multi Stock
+            </a>
+            <a href="{{ url_for('send_stock') }}" class="btn-primary-custom" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <i class="fas fa-paper-plane"></i> Send
+            </a>
+            <a href="{{ url_for('multi_stock') }}?name=Balance Stock" class="btn-primary-custom" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <i class="fas fa-balance-scale"></i> Balance
+            </a>
+            <a href="{{ url_for('export_excel_stock') }}" class="btn-primary-custom" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Modern Filter Card -->
+    <div class="card-modern fade-in-up mb-4">
+        <div class="card-header-modern">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & View Options</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label-custom">Category Filter</label>
+                    <select id="categoryFilter" class="form-select-modern">
+                        <option value="all">📁 All Categories</option>
+                        {% for cat in Categorys %}
+                        <option value="{{ cat.Cat_Name }}">{{ cat.Cat_Name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label-custom">Column Visibility</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn-outline-custom btn-sm" onclick="toggleColumn('net')">
+                            <i class="fas fa-chart-line"></i> Net Value
+                        </button>
+                        <button class="btn-outline-custom btn-sm" onclick="toggleColumn('sell')">
+                            <i class="fas fa-chart-simple"></i> Sell Value
+                        </button>
+                        <button class="btn-primary-custom btn-sm" onclick="showAllColumns()">
+                            <i class="fas fa-eye"></i> Full Report
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    <span class="badge-info">
+                        <i class="fas fa-boxes me-1"></i>
+                        Total Items: {{ items|length }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="stock-table-wrapper">
+        <div class="table-container">
+            <table class="stock-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Item Name</th>
+                        <th rowspan="2" class="total-col">Total Stock</th>
+                        <th rowspan="2" class="total-col net-col">Total Net Value</th>
+                        <th rowspan="2" class="total-col sell-col">Total Sell Value</th>
+                        {% for PriceUpdate in PriceUpdates %}
+                        <th colspan="6" class="price-group">{{ PriceUpdate.Date }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for PriceUpdate in PriceUpdates %}
+                        <th>Stock</th>
+                        <th>Net Price</th>
+                        <th class="net-col">Net Value</th>
+                        <th>Sell Price</th>
+                        <th class="sell-col">Sell Value</th>
+                        <th>MRP</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item_id, item in items.items() %}
+                    {% set ns = namespace(total_stock=0, total_net=0, total_sell=0) %}
+                    {% for pu in PriceUpdates %}
+                    {% set p = item.prices.get(pu.Id) %}
+                    {% if p %}
+                    {% set ns.total_stock = ns.total_stock + (p.stock|int) %}
+                    {% set ns.total_net = ns.total_net + ((p.net|float) * (p.stock|int)) %}
+                    {% set ns.total_sell = ns.total_sell + ((p.sell|float) * (p.stock|int)) %}
+                    {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Stock Status Badge -->
+                    {% set stock_status = '' %}
+                    {% if ns.total_stock == 0 %}
+                        {% set stock_status = 'out-of-stock' %}
+                    {% elif ns.total_stock < 5 %}
+                        {% set stock_status = 'few-stock' %}
+                    {% else %}
+                        {% set stock_status = 'in-stock' %}
+                    {% endif %}
+                    
+                    <tr data-category="{{ item.category }}" class="stock-item-row">
+                        <td class="item-name-cell">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="item-icon">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <span class="fw-semibold">{{ item.name }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Total Stock with Status Badge -->
+                        <td class="total-col text-center">
+                            <div class="stock-status-badge {{ stock_status }}">
+                                <i class="fas 
+                                    {% if ns.total_stock == 0 %}fa-times-circle
+                                    {% elif ns.total_stock < 5 %}fa-exclamation-triangle
+                                    {% else %}fa-check-circle{% endif %}"></i>
+                                <span class="stock-count">{{ ns.total_stock }}</span>
+                                <span class="stock-status-text">
+                                    {% if ns.total_stock == 0 %}Out of Stock
+                                    {% elif ns.total_stock < 5 %}Low Stock
+                                    {% else %}In Stock{% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        
+                        <!-- Total Net Value - Highlighted -->
+                        <td class="total-col net-col text-end net-value-cell">
+                            <span class="net-value-amount">Rs. {{ "{:,.2f}".format(ns.total_net) }}</span>
+                        </td>
+                        
+                        <!-- Total Sell Value - Highlighted -->
+                        <td class="total-col sell-col text-end sell-value-cell">
+                            <span class="sell-value-amount">Rs. {{ "{:,.2f}".format(ns.total_sell) }}</span>
+                        </td>
+
+                        <!-- Details for each price update -->
+                        {% for pu in PriceUpdates %}
+                        {% set p = item.prices.get(pu.Id) %}
+                        {% set detail_stock = p.stock if p else 0 %}
+                        {% if detail_stock == 0 %}
+                            {% set detail_status = 'zero' %}
+                        {% elif detail_stock < 5 %}
+                            {% set detail_status = 'low' %}
+                        {% else %}
+                            {% set detail_status = 'normal' %}
+                        {% endif %}
+                        
+                        <td class="text-center stock-detail-cell stock-{{ detail_status }}">
+                            <span class="stock-detail-qty">{{ detail_stock }}</span>
+                        </td>
+                        <td class="text-end price-cell">Rs. {{ "{:,.2f}".format(p.net|float) if p else "0.00" }}</td>
+                        <td class="net-col text-end price-cell">Rs. {{ "{:,.2f}".format((p.net|float) * (p.stock|int)) if p else "0.00" }}</td>
+                        <td class="text-end price-cell">Rs. {{ "{:,.2f}".format(p.sell|float) if p else "0.00" }}</td>
+                        <td class="sell-col text-end price-cell">Rs. {{ "{:,.2f}".format((p.sell|float) * (p.stock|int)) if p else "0.00" }}</td>
+                        <td class="text-end price-cell">Rs. {{ "{:,.2f}".format(p.mrp|float) if p else "0.00" }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary), var(--primary-light));">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-plus-circle me-2"></i> Add New Stock
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_stock') }}">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label-custom">Category</label>
+                            <select id="category" name="category_id" class="form-select-modern" required>
+                                <option value="">-- Select Category --</option>
+                                {% for Category in Categorys %}
+                                <option value="{{ Category.Id }}">{{ Category.Cat_Name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label-custom">Item</label>
+                            <select id="item" name="item_id" class="form-select-modern" required disabled>
+                                <option value="">-- First Select Category --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label-custom">Price Update</label>
+                            <select id="price_update" name="price_update_id" class="form-select-modern" required>
+                                <option value="">-- Select Price Update --</option>
+                                {% for PriceUpdate in PriceUpdates %}
+                                <option value="{{ PriceUpdate.Id }}">{{ PriceUpdate.Date }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="price-preview-card">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted">Net Price</small>
+                                        <h6 class="mb-0" id="netPrice">0.00</h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Sell Price</small>
+                                        <h6 class="mb-0" id="sellPrice">0.00</h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">MRP</small>
+                                        <h6 class="mb-0" id="mrpPrice">0.00</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label-custom">Quantity</label>
+                            <input type="number" name="qty" class="form-control-modern" placeholder="Enter quantity" min="1" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-primary-custom">
+                        <i class="fas fa-save"></i> Save Stock
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stock-table-wrapper {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    
+    .table-container {
+        height: calc(100vh - 320px);
+        overflow: auto;
+    }
+    
+    .stock-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: max-content;
+        min-width: 100%;
+        table-layout: auto;
+    }
+    
+    .stock-table th,
+    .stock-table td {
+        padding: 8px 12px;
+        border: 1px solid #e5e5e5;
+        white-space: nowrap;
+        width: auto;
+        max-width: none;
+    }
+    
+    /* Item Name column - STICKY */
+    .stock-table th:first-child,
+    .stock-table td:first-child {
+        position: sticky;
+        left: 0;
+        background: #ffeaa7;
+        z-index: 220;
+        font-weight: 600;
+        width: max-content;
+    }
+    
+    .stock-table .total-col {
+        background: #dff9fb !important;
+        font-weight: 700;
+        text-align: center;
+        width: max-content;
+    }
+    
+    /* ========================================
+       NET VALUE COLUMN - Green Theme
+       ======================================== */
+    .net-value-cell {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+        border-left: 3px solid #10b981 !important;
+        border-right: 1px solid #10b981 !important;
+    }
+    
+    .net-value-amount {
+        color: #065f46;
+        font-weight: 800;
+        font-size: 13px;
+        background: rgba(255,255,255,0.5);
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+    
+    /* ========================================
+       SELL VALUE COLUMN - Orange Theme
+       ======================================== */
+    .sell-value-cell {
+        background: linear-gradient(135deg, #fed7aa, #fde68a) !important;
+        border-left: 3px solid #f59e0b !important;
+        border-right: 1px solid #f59e0b !important;
+    }
+    
+    .sell-value-amount {
+        color: #92400e;
+        font-weight: 800;
+        font-size: 13px;
+        background: rgba(255,255,255,0.5);
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+    
+    /* ========================================
+       STOCK STATUS BADGE
+       ======================================== */
+    .stock-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    
+    .stock-status-badge.in-stock {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .stock-status-badge.in-stock i {
+        color: #10b981;
+    }
+    
+    .stock-status-badge.few-stock {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    
+    .stock-status-badge.few-stock i {
+        color: #f59e0b;
+    }
+    
+    .stock-status-badge.out-of-stock {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .stock-status-badge.out-of-stock i {
+        color: #ef4444;
+    }
+    
+    .stock-count {
+        font-weight: 800;
+        font-size: 14px;
+        margin: 0 4px;
+    }
+    
+    .stock-status-text {
+        font-size: 11px;
+    }
+    
+    /* ========================================
+       DETAIL STOCK CELLS
+       ======================================== */
+    .stock-detail-cell {
+        font-weight: 700;
+    }
+    
+    .stock-detail-cell.stock-normal {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .stock-detail-cell.stock-low {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    
+    .stock-detail-cell.stock-zero {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .stock-detail-qty {
+        font-weight: 800;
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 20px;
+    }
+    
+    /* Price cells */
+    .price-cell {
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    /* Item icon */
+    .item-icon {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+    
+    .item-name-cell {
+        font-weight: 600;
+    }
+    
+    /* Header styles */
+    .stock-table thead tr:first-child th {
+        position: sticky;
+        top: 0;
+        background: #2f3542;
+        color: #fff;
+        z-index: 300;
+    }
+    
+    .stock-table thead tr:nth-child(2) th {
+        position: sticky;
+        top: 48px;
+        background: #57606f;
+        color: #fff;
+        z-index: 250;
+    }
+    
+    .stock-table thead .total-col {
+        background: #00b894 !important;
+        color: #fff !important;
+    }
+    
+    .stock-table thead tr:first-child th:first-child {
+        z-index: 400;
+    }
+    
+    .stock-table tbody tr:hover td:first-child {
+        background: #fde68a !important;
+    }
+    
+    .stock-table tbody tr:hover td {
+        background: #f8fafc !important;
+    }
+    
+    /* Column visibility */
+    .net-col,
+    .sell-col {
+        display: table-cell;
+    }
+    
+    .price-preview-card {
+        background: var(--gray-bg);
+        border-radius: 16px;
+        padding: 16px;
+    }
+    
+    @media (max-width: 768px) {
+        .table-container {
+            height: calc(100vh - 280px);
+        }
+        .stock-table th,
+        .stock-table td {
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+        .stock-status-text {
+            display: none;
+        }
+        .stock-status-badge {
+            padding: 4px 8px;
+        }
+    }
+</style>
+
+<script>
+    const categorySelect = document.getElementById("category");
+    const itemSelect = document.getElementById("item");
+    const priceUpdateSelect = document.getElementById("price_update");
+    const netSpan = document.getElementById("netPrice");
+    const sellSpan = document.getElementById("sellPrice");
+    const mrpSpan = document.getElementById("mrpPrice");
+    
+    if (categorySelect) {
+        categorySelect.addEventListener("change", function() {
+            const categoryId = this.value;
+            if (!categoryId) {
+                itemSelect.innerHTML = '<option value="">-- First Select Category --</option>';
+                itemSelect.disabled = true;
+                return;
+            }
+            
+            itemSelect.disabled = true;
+            itemSelect.innerHTML = '<option value="">Loading...</option>';
+            
+            fetch(`/get_items/${categoryId}`)
+                .then(res => res.json())
+                .then(data => {
+                    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+                    data.forEach(row => {
+                        itemSelect.innerHTML += `<option value="${row.id}">${row.name}</option>`;
+                    });
+                    itemSelect.disabled = false;
+                })
+                .catch(err => {
+                    console.error("Error loading items:", err);
+                    itemSelect.innerHTML = '<option value="">Error loading items</option>';
+                });
+        });
+    }
+    
+    function loadPrice() {
+        const itemId = itemSelect?.value;
+        const updateId = priceUpdateSelect?.value;
+        
+        if (itemId && updateId) {
+            fetch(`/get_price/${itemId}/${updateId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status) {
+                        netSpan.innerText = parseFloat(data.net).toLocaleString();
+                        sellSpan.innerText = parseFloat(data.sell).toLocaleString();
+                        mrpSpan.innerText = parseFloat(data.mrp).toLocaleString();
+                    } else {
+                        netSpan.innerText = "0.00";
+                        sellSpan.innerText = "0.00";
+                        mrpSpan.innerText = "0.00";
+                        showToast("Price not found for this combination", "warning");
+                    }
+                })
+                .catch(err => {
+                    console.error("Error loading price:", err);
+                    netSpan.innerText = "0.00";
+                    sellSpan.innerText = "0.00";
+                    mrpSpan.innerText = "0.00";
+                });
+        } else {
+            netSpan.innerText = "0.00";
+            sellSpan.innerText = "0.00";
+            mrpSpan.innerText = "0.00";
+        }
+    }
+    
+    if (itemSelect) itemSelect.addEventListener("change", loadPrice);
+    if (priceUpdateSelect) priceUpdateSelect.addEventListener("change", loadPrice);
+    
+    const categoryFilter = document.getElementById("categoryFilter");
+    if (categoryFilter) {
+        categoryFilter.addEventListener("change", function() {
+            const selected = this.value;
+            const rows = document.querySelectorAll(".stock-table tbody tr");
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const rowCat = row.getAttribute("data-category");
+                if (selected === "all" || rowCat === selected) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
+            });
+            
+            showToast(`${visibleCount} items visible`, "info", "Filter Applied");
+        });
+    }
+    
+    function toggleColumn(type) {
+        const elements = document.querySelectorAll(`.${type}-col`);
+        const isHidden = elements.length > 0 && elements[0].style.display === "none";
+        const newDisplay = isHidden ? "table-cell" : "none";
+        
+        elements.forEach(col => {
+            col.style.display = newDisplay;
+        });
+        
+        updateColspan();
+        showToast(`${type === 'net' ? 'Net Value' : 'Sell Value'} columns ${isHidden ? 'shown' : 'hidden'}`, "info");
+    }
+    
+    function showAllColumns() {
+        document.querySelectorAll('.net-col, .sell-col').forEach(col => {
+            col.style.display = "table-cell";
+        });
+        updateColspan();
+        showToast("All columns are now visible", "success");
+    }
+    
+    function updateColspan() {
+        const netVisible = document.querySelector('.net-col')?.style.display !== "none";
+        const sellVisible = document.querySelector('.sell-col')?.style.display !== "none";
+        
+        let baseCols = 4;
+        if (netVisible) baseCols += 1;
+        if (sellVisible) baseCols += 1;
+        
+        document.querySelectorAll('.price-group').forEach(th => {
+            th.colSpan = baseCols;
+        });
+    }
+    
+    function fixHeaderOffset() {
+        const firstRow = document.querySelector(".stock-table thead tr:first-child");
+        const secondRow = document.querySelectorAll(".stock-table thead tr:nth-child(2) th");
+        
+        if (firstRow) {
+            const height = firstRow.offsetHeight;
+            secondRow.forEach(th => {
+                th.style.top = height + "px";
+            });
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        updateColspan();
+        fixHeaderOffset();
+        showAllColumns();
+        window.addEventListener("resize", fixHeaderOffset);
+        
+        const priceUpdateCount = {{ PriceUpdates|length }};
+        if (priceUpdateCount === 0) {
+            const container = document.querySelector('.table-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-info-circle fa-3x mb-3" style="color: #cbd5e1;"></i>
+                        <h5 class="text-muted">No Price Updates Found</h5>
+                        <p class="text-muted">Please create a price update first to see stock data.</p>
+                        <a href="{{ url_for('PriceUpdateManage') }}" class="btn-primary-custom mt-2">
+                            <i class="fas fa-plus-circle"></i> Create Price Update
+                        </a>
+                    </div>
+                `;
+            }
+        }
+    });
+</script>
+{% endblock %}

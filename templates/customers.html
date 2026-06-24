@@ -1,0 +1,721 @@
+{% extends "base.html" %}
+
+{% block title %}Customers Management{% endblock %}
+
+{% block page_title %}Customers{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h4 class="mb-1">
+                <i class="fas fa-users me-2" style="color: var(--primary);"></i>
+                Customer Management
+            </h4>
+            <p class="text-muted small mb-0">Manage all clients, view balances, and track transactions</p>
+        </div>
+        <a href="{{ url_for('add_customer') }}" class="btn-primary-custom">
+            <i class="fas fa-user-plus"></i> Add New Customer
+        </a>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-1">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Total Customers</span>
+                        <h2 class="mb-0 mt-1">{{ customers|length }}</h2>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Registered clients</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Positive Balance</span>
+                        <h2 class="mb-0 mt-1 text-success">
+                            {{ customers|selectattr('balance','ge',0)|list|length }}
+                        </h2>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Customers with credit balance</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-mini-card fade-in-up delay-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase">Negative Balance</span>
+                        <h2 class="mb-0 mt-1 text-danger">
+                            {{ customers|selectattr('balance','lt',0)|list|length }}
+                        </h2>
+                    </div>
+                    <div class="customer-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Customers with overpayment</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Filter Card -->
+    <div class="card-modern fade-in-up mb-4">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                Search Customers
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" action="{{ url_for('customers') }}" class="row g-3">
+                <div class="col-md-8">
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                               class="form-control-modern" placeholder="Search by customer name...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn-primary-custom w-100">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('customers') }}" class="btn-outline-custom">
+                            <i class="fas fa-undo-alt"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customers Table Card -->
+    <div class="card-modern fade-in-up">
+        <div class="card-header-modern">
+            <h5 class="mb-0">
+                <i class="fas fa-list-ul me-2"></i>
+                Customer Directory
+            </h5>
+            <span class="badge-info">
+                <i class="fas fa-chart-line"></i> {{ customers|length }} Records Found
+            </span>
+        </div>
+        <div class="card-body p-0">
+            {% if customers %}
+            <div class="customers-table-container">
+                <table class="table-modern customers-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Store / Business</th>
+                            <th>Contact</th>
+                            <th>Balance</th>
+                            <th style="width: 130px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in customers %}
+                        <tr class="customer-row" data-customer-id="{{ c.id }}">
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="customer-avatar" style="width: 45px; height: 45px; font-size: 18px;">
+                                        {{ c.name[0].upper() if c.name else '?' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ c.name }}</div>
+                                        <small class="text-muted">ID: {{ c.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="store-info">
+                                    <i class="fas fa-store me-1" style="color: var(--primary);"></i>
+                                    {{ c.store or '—' }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if c.phone1 %}
+                                <div class="contact-info">
+                                    <i class="fas fa-phone-alt me-1" style="color: var(--gray);"></i>
+                                    {{ c.phone1 }}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if c.balance < 0 %}
+                                <span class="badge-danger">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                    Rs. {{ "{:,.2f}".format(c.balance|abs) }} (Overpaid)
+                                </span>
+                                {% elif c.balance > 0 %}
+                                <span class="badge-warning">
+                                    <i class="fas fa-hourglass-half"></i>
+                                    Rs. {{ "{:,.2f}".format(c.balance) }} (Due)
+                                </span>
+                                {% else %}
+                                <span class="badge-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    Rs. 0.00 (Settled)
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('ledger', id=c.id) }}" class="btn-action ledger" title="View Ledger">
+                                        <i class="fas fa-journal-whills"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_customer', id=c.id) }}" class="btn-action edit" title="Edit Customer">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <button type="button" class="btn-action delete delete-customer-btn" 
+                                            data-id="{{ c.id }}"
+                                            data-name="{{ c.name }}"
+                                            data-balance="{{ c.balance }}"
+                                            title="Delete Customer">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-user-slash fa-4x mb-3" style="color: var(--gray-light);"></i>
+                    <h5 class="text-muted">No customers found</h5>
+                    <p class="text-muted small">Start by adding your first customer</p>
+                    <a href="{{ url_for('add_customer') }}" class="btn-primary-custom mt-2">
+                        <i class="fas fa-user-plus"></i> Add Customer
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Table Footer -->
+        <div class="card-footer bg-transparent p-3 border-top">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Click on ledger icon to view full transaction history
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Balance shown is Credit - Debit
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCustomerModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Warning: Customer Has Outstanding Data!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deleteCustomerBody">
+                <div class="text-center py-5">
+                    <div class="loading-spinner-small mx-auto mb-3"></div>
+                    <p>Checking customer records...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline-custom" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-danger-custom" id="confirmForceDeleteBtn">
+                    <i class="fas fa-trash-alt"></i> Yes, Delete Customer & All Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Customers Table Specific Styles */
+    .customers-table-container {
+        max-height: 500px;
+        overflow: auto;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .customers-table {
+        width: 100%;
+    }
+    
+    .customers-table th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        z-index: 10;
+    }
+    
+    .customer-row {
+        transition: var(--transition);
+    }
+    
+    .customer-row:hover {
+        background: var(--gray-bg);
+    }
+    
+    .store-info {
+        font-size: 14px;
+        color: var(--gray);
+    }
+    
+    .contact-info {
+        font-size: 13px;
+        font-family: monospace;
+    }
+    
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        text-decoration: none;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-action.ledger {
+        color: var(--primary);
+    }
+    
+    .btn-action.ledger:hover {
+        background: #eef2ff;
+        color: var(--primary-dark);
+        transform: scale(1.05);
+    }
+    
+    .btn-action.edit {
+        color: var(--warning);
+    }
+    
+    .btn-action.edit:hover {
+        background: #fef3c7;
+        color: #d97706;
+        transform: scale(1.05);
+    }
+    
+    .btn-action.delete {
+        color: var(--danger);
+    }
+    
+    .btn-action.delete:hover {
+        background: #fee2e2;
+        color: #dc2626;
+        transform: scale(1.05);
+    }
+    
+    .btn-danger-custom {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        border-radius: 12px;
+        padding: 10px 24px;
+        font-weight: 600;
+        transition: var(--transition);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-danger-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+    
+    .loading-spinner-small {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--gray-light);
+        border-top: 3px solid var(--danger);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    
+    /* Warning Modal Styles */
+    .warning-stats {
+        background: linear-gradient(135deg, #fef3c7, #fffbeb);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #fde68a;
+    }
+    
+    .outstanding-table {
+        max-height: 300px;
+        overflow: auto;
+        border-radius: 12px;
+        border: 1px solid var(--gray-light);
+    }
+    
+    .outstanding-table table {
+        width: 100%;
+        font-size: 13px;
+    }
+    
+    .outstanding-table thead th {
+        position: sticky;
+        top: 0;
+        background: var(--secondary);
+        color: white;
+        padding: 10px;
+        z-index: 10;
+    }
+    
+    .outstanding-table td,
+    .outstanding-table th {
+        padding: 10px;
+        border: 1px solid var(--gray-light);
+    }
+    
+    .delete-warning {
+        background: #fef2f2;
+        border-left: 4px solid #dc2626;
+        border-radius: 12px;
+        padding: 16px;
+    }
+    
+    .empty-state {
+        padding: 60px 20px;
+    }
+    
+    .search-input-group {
+        position: relative;
+    }
+    
+    .search-input-group i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+        z-index: 1;
+    }
+    
+    .search-input-group .form-control-modern {
+        padding-left: 42px;
+    }
+    
+    @media (max-width: 768px) {
+        .customers-table td,
+        .customers-table th {
+            padding: 10px;
+            font-size: 12px;
+        }
+        
+        .btn-action {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .customer-avatar {
+            width: 35px;
+            height: 35px;
+            font-size: 14px;
+        }
+    }
+</style>
+
+<script>
+    // Variables
+    let currentCustomerId = null;
+    let currentCustomerName = null;
+    let deleteModal = null;
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap modal
+        deleteModal = new bootstrap.Modal(document.getElementById('deleteCustomerModal'));
+        
+        // Add click event to all delete buttons
+        document.querySelectorAll('.delete-customer-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const customerId = this.getAttribute('data-id');
+                const customerName = this.getAttribute('data-name');
+                const customerBalance = parseFloat(this.getAttribute('data-balance'));
+                checkCustomerBeforeDelete(customerId, customerName, customerBalance);
+            });
+        });
+        
+        // Confirm delete button event
+        const confirmBtn = document.getElementById('confirmForceDeleteBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                forceDeleteCustomer();
+            });
+        }
+        
+        // Add click handler for customer rows to go to ledger
+        document.querySelectorAll('.customer-row').forEach(row => {
+            const ledgerBtn = row.querySelector('.btn-action.ledger');
+            if (ledgerBtn) {
+                // Already has link
+            }
+        });
+    });
+    
+    // Function to check customer before deletion
+    async function checkCustomerBeforeDelete(customerId, customerName, customerBalance) {
+        currentCustomerId = customerId;
+        currentCustomerName = customerName;
+        
+        // Show loading state in modal
+        document.getElementById('deleteCustomerBody').innerHTML = `
+            <div class="text-center py-5">
+                <div class="loading-spinner-small mx-auto mb-3"></div>
+                <p>Checking records for <strong>${escapeHtml(customerName)}</strong>...</p>
+            </div>
+        `;
+        
+        // Show modal
+        deleteModal.show();
+        
+        try {
+            const response = await fetch(`/delete_customer/${customerId}`);
+            const data = await response.json();
+            
+            if (data.has_outstanding) {
+                displayDeleteWarning(data);
+            } else {
+                // No outstanding data, ask for confirmation
+                Swal.fire({
+                    title: 'No Outstanding Data',
+                    html: `<p>Customer <strong>${escapeHtml(customerName)}</strong> has no pending credits or overpayments.</p>
+                           <p class="text-muted">Do you want to delete this customer?</p>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, delete customer',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        forceDeleteCustomer();
+                    }
+                    deleteModal.hide();
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('deleteCustomerBody').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error checking customer data: ${escapeHtml(error.message)}
+                </div>
+            `;
+        }
+    }
+    
+    // Display delete warning with details
+    function displayDeleteWarning(data) {
+        let html = `
+            <div class="warning-stats">
+                <div class="row text-center g-3">
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-user fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Customer</h6>
+                            <p class="fw-bold text-danger mb-0">${escapeHtml(data.customer_name)}</p>
+                            <small class="text-muted">${escapeHtml(data.customer_store)}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-receipt fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Outstanding Credits</h6>
+                            <p class="fw-bold text-danger mb-0">${data.total_credits_count} Invoice(s)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-item">
+                            <i class="fas fa-calculator fa-2x mb-2" style="color: var(--warning);"></i>
+                            <h6 class="mb-1">Total Outstanding</h6>
+                            <p class="fw-bold text-danger mb-0">Rs. ${data.total_outstanding_amount.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add overpayment warning if exists
+        if (data.overpayment > 0) {
+            html += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-cash-stack me-2"></i>
+                    <strong>Overpayment Alert:</strong> This customer has an overpayment of 
+                    <strong>Rs. ${data.overpayment.toFixed(2)}</strong> that will be lost upon deletion!
+                </div>
+            `;
+        }
+        
+        // Add debit records warning
+        if (data.has_debits) {
+            html += `
+                <div class="alert alert-info">
+                    <i class="fas fa-credit-card me-2"></i>
+                    <strong>Payment Records:</strong> This customer has made payment transactions that will also be deleted.
+                </div>
+            `;
+        }
+        
+        html += `
+            <div class="delete-warning">
+                <i class="fas fa-exclamation-octagon me-2"></i>
+                <strong>⚠️ WARNING:</strong> Deleting this customer will permanently remove:
+                <ul class="mt-2 mb-0">
+                    <li>All credit invoices (${data.total_credits_count} invoice(s) worth Rs. ${data.total_outstanding_amount.toFixed(2)})</li>
+                    <li>All payment/debit records</li>
+                    <li>All settlement records</li>
+                    <li>Customer balance and overpayment data</li>
+                    <li>The customer profile itself</li>
+                </ul>
+                <strong class="d-block mt-2 text-danger">⚠️ THIS ACTION CANNOT BE UNDONE!</strong>
+            </div>
+            
+            <div class="outstanding-table mt-3">
+                <h6 class="mb-2"><i class="fas fa-list-ul"></i> Outstanding Credit Invoices:</h6>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Amount</th>
+                            <th>Balance</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.outstanding_credits.forEach((credit, index) => {
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${credit.date}</td>
+                    <td>${escapeHtml(credit.reference)}</td>
+                    <td>Rs. ${credit.amount.toFixed(2)}</td>
+                    <td class="text-danger fw-bold">Rs. ${credit.balance.toFixed(2)}</td>
+                    <td>${credit.due_date || 'No due date'}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="alert alert-danger mt-3">
+                <i class="fas fa-database me-2"></i>
+                <strong>Total Value at Risk:</strong> Rs. ${(data.total_outstanding_amount + data.overpayment).toFixed(2)}
+            </div>
+        `;
+        
+        document.getElementById('deleteCustomerBody').innerHTML = html;
+    }
+    
+    // Force delete customer
+    async function forceDeleteCustomer() {
+        if (!currentCustomerId) return;
+        
+        Swal.fire({
+            title: 'Deleting Customer...',
+            text: `Please wait while we delete ${currentCustomerName} and all associated data.`,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        try {
+            const response = await fetch('/force_delete_customer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    customer_id: currentCustomerId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: 'An error occurred: ' + error.message,
+                icon: 'error',
+                confirmButtonColor: '#dc2626'
+            });
+        } finally {
+            if (deleteModal) {
+                deleteModal.hide();
+            }
+        }
+    }
+    
+    // Escape HTML helper
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

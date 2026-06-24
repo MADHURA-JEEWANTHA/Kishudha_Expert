@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == 'edit' %}Edit Customer{% else %}Add Customer{% endif %}{% endblock %}
+
+{% block page_title %}{% if mode == 'edit' %}Edit Customer{% else %}Add New Customer{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Section -->
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+                {% if mode == 'edit' %}
+                <div class="customer-avatar" style="width: 55px; height: 55px; background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <i class="fas fa-pencil-alt fa-2x"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1">Edit Customer</h4>
+                    <p class="text-muted small mb-0">Update customer details and contact information</p>
+                </div>
+                {% else %}
+                <div class="customer-avatar" style="width: 55px; height: 55px; background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="fas fa-user-plus fa-2x"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1">Add New Customer</h4>
+                    <p class="text-muted small mb-0">Create a new customer profile in the system</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card-modern fade-in-up">
+                <div class="card-header-modern">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Customer Information
+                    </h5>
+                    <span class="badge-info">
+                        <i class="fas fa-asterisk me-1" style="font-size: 10px;"></i> Required fields
+                    </span>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="POST" id="customerForm">
+                        <div class="row g-4">
+                            <!-- Customer Name -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-user me-1"></i> Customer Name <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group-custom">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" name="name" id="customerName" 
+                                           value="{{ customer.name if customer else '' }}"
+                                           class="form-control-modern" 
+                                           placeholder="Enter full name"
+                                           required>
+                                </div>
+                                <div id="nameHelp" class="small text-muted mt-1"></div>
+                            </div>
+
+                            <!-- Store Name -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-store me-1"></i> Store / Business Name
+                                </label>
+                                <div class="input-group-custom">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-shop"></i>
+                                    </span>
+                                    <input type="text" name="store" 
+                                           value="{{ customer.store_name if customer else '' }}"
+                                           class="form-control-modern" 
+                                           placeholder="Store or business name (optional)">
+                                </div>
+                                <small class="text-muted">Optional - for business customers</small>
+                            </div>
+
+                            <!-- Phone Number 1 -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-phone-alt me-1"></i> Phone Number 01 <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group-custom">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-phone"></i>
+                                    </span>
+                                    <input type="tel" name="phone1" id="phone1"
+                                           value="{{ customer.phone1 if customer else '' }}"
+                                           class="form-control-modern" 
+                                           placeholder="07XXXXXXXX"
+                                           required>
+                                </div>
+                                <div id="phone1Help" class="small text-muted mt-1">Format: 07XXXXXXXX (10 digits)</div>
+                            </div>
+
+                            <!-- Phone Number 2 -->
+                            <div class="col-md-6">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-phone-alt me-1"></i> Phone Number 02
+                                </label>
+                                <div class="input-group-custom">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-phone"></i>
+                                    </span>
+                                    <input type="tel" name="phone2" id="phone2"
+                                           value="{{ customer.phone2 if customer else '' }}"
+                                           class="form-control-modern" 
+                                           placeholder="07XXXXXXXX (optional)">
+                                </div>
+                                <small class="text-muted">Optional - secondary contact number</small>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-12">
+                                <label class="form-label-custom">
+                                    <i class="fas fa-map-marker-alt me-1"></i> Address
+                                </label>
+                                <div class="input-group-custom" style="align-items: flex-start;">
+                                    <span class="input-group-text" style="padding-top: 14px;">
+                                        <i class="fas fa-location-dot"></i>
+                                    </span>
+                                    <textarea name="address" class="form-control-modern" rows="3" 
+                                              placeholder="Full address (optional)">{{ customer.address if customer else '' }}</textarea>
+                                </div>
+                                <small class="text-muted">Optional - delivery address or business location</small>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex flex-wrap justify-content-between gap-3 mt-4 pt-3 border-top">
+                            <a href="{{ url_for('customers') }}" class="btn-outline-custom">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn-primary-custom" id="submitBtn">
+                                {% if mode == 'edit' %}
+                                <i class="fas fa-save"></i> Update Customer
+                                {% else %}
+                                <i class="fas fa-user-plus"></i> Create Customer
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="info-card mt-4 fade-in-up delay-2">
+                <div class="d-flex gap-3">
+                    <i class="fas fa-info-circle fa-2x" style="color: var(--primary);"></i>
+                    <div>
+                        <h6 class="mb-1">About Customer Management</h6>
+                        <p class="small text-muted mb-0">
+                            Customer profiles are used to track credit transactions, payments, and generate invoices.
+                            Phone numbers should be valid Sri Lankan mobile numbers starting with 07.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Add Customer Specific Styles */
+    .info-card {
+        background: linear-gradient(135deg, var(--gray-bg), white);
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid var(--gray-light);
+        transition: var(--transition);
+    }
+    
+    .info-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .input-group-custom .input-group-text {
+        background: var(--gray-bg);
+        border: none;
+        padding: 12px 16px;
+        color: var(--gray);
+        min-width: 48px;
+        justify-content: center;
+    }
+    
+    textarea.form-control-modern {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .form-control-modern.is-invalid {
+        border-color: var(--danger);
+        background: #fef2f2;
+    }
+    
+    .form-control-modern.is-valid {
+        border-color: var(--success);
+        background: #f0fdf4;
+    }
+    
+    @media (max-width: 768px) {
+        .info-card {
+            padding: 16px;
+        }
+        .info-card i {
+            font-size: 28px;
+        }
+    }
+</style>
+
+<script>
+    // DOM Elements
+    const customerForm = document.getElementById('customerForm');
+    const customerName = document.getElementById('customerName');
+    const phone1 = document.getElementById('phone1');
+    const phone2 = document.getElementById('phone2');
+    const nameHelp = document.getElementById('nameHelp');
+    const phone1Help = document.getElementById('phone1Help');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Phone number validation regex (Sri Lankan format)
+    const phoneRegex = /^(07\d{8})$/;
+    
+    // ========================================
+    // REAL-TIME VALIDATION
+    // ========================================
+    
+    // Name validation
+    if (customerName) {
+        customerName.addEventListener('input', function() {
+            const name = this.value.trim();
+            if (name.length === 0) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (nameHelp) {
+                    nameHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Customer name is required';
+                    nameHelp.style.color = '#dc2626';
+                }
+            } else if (name.length < 2) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (nameHelp) {
+                    nameHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Name must be at least 2 characters';
+                    nameHelp.style.color = '#dc2626';
+                }
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                if (nameHelp) {
+                    nameHelp.innerHTML = '<i class="fas fa-check-circle text-success"></i> Valid name';
+                    nameHelp.style.color = '#10b981';
+                }
+            }
+        });
+    }
+    
+    // Phone 1 validation
+    if (phone1) {
+        phone1.addEventListener('input', function() {
+            // Allow only digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            const phone = this.value;
+            if (!phone) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (phone1Help) {
+                    phone1Help.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Phone number is required';
+                    phone1Help.style.color = '#dc2626';
+                }
+            } else if (!phoneRegex.test(phone)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (phone1Help) {
+                    phone1Help.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Invalid format. Use 07XXXXXXXX';
+                    phone1Help.style.color = '#dc2626';
+                }
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                if (phone1Help) {
+                    phone1Help.innerHTML = '<i class="fas fa-check-circle text-success"></i> Valid Sri Lankan number';
+                    phone1Help.style.color = '#10b981';
+                }
+            }
+        });
+        
+        // Trigger initial validation
+        phone1.dispatchEvent(new Event('input'));
+    }
+    
+    // Phone 2 validation (optional)
+    if (phone2) {
+        phone2.addEventListener('input', function() {
+            // Allow only digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            const phone = this.value;
+            if (phone && !phoneRegex.test(phone)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else if (phone && phoneRegex.test(phone)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.remove('is-valid');
+            }
+        });
+    }
+    
+    // ========================================
+    // FORM SUBMIT VALIDATION
+    // ========================================
+    if (customerForm) {
+        customerForm.addEventListener('submit', function(e) {
+            // Validate name
+            const name = customerName?.value.trim();
+            if (!name || name.length < 2) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Name',
+                    text: 'Please enter a valid customer name (minimum 2 characters)',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Validate phone 1
+            const phone1Value = phone1?.value;
+            if (!phone1Value || !phoneRegex.test(phone1Value)) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Phone Number',
+                    text: 'Please enter a valid phone number (07XXXXXXXX format)',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Validate phone 2 if provided
+            const phone2Value = phone2?.value;
+            if (phone2Value && !phoneRegex.test(phone2Value)) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Secondary Phone',
+                    text: 'Secondary phone number must be in 07XXXXXXXX format',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+            
+            // Show loading
+            showLoading();
+        });
+    }
+    
+    // ========================================
+    // AUTO-FORMAT PHONE NUMBERS
+    // ========================================
+    function formatPhoneNumber(phone) {
+        if (!phone) return '';
+        const cleaned = phone.replace(/[^0-9]/g, '');
+        if (cleaned.length === 10) {
+            return cleaned;
+        }
+        return cleaned;
+    }
+    
+    // ========================================
+    // PREVENT PASTE OF INVALID CHARACTERS
+    // ========================================
+    [phone1, phone2].forEach(input => {
+        if (input) {
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const cleaned = pastedText.replace(/[^0-9]/g, '');
+                this.value = cleaned.slice(0, 10);
+                this.dispatchEvent(new Event('input'));
+            });
+        }
+    });
+    
+    // ========================================
+    // INITIAL VALIDATION ON LOAD (for edit mode)
+    // ========================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Trigger validation for edit mode
+        if (customerName && customerName.value) {
+            customerName.dispatchEvent(new Event('input'));
+        }
+        if (phone1 && phone1.value) {
+            phone1.dispatchEvent(new Event('input'));
+        }
+        if (phone2 && phone2.value) {
+            phone2.dispatchEvent(new Event('input'));
+        }
+        
+        // Add animation to form card
+        const formCard = document.querySelector('.card-modern');
+        if (formCard) {
+            formCard.classList.add('fade-in-up');
+        }
+    });
+    
+    // ========================================
+    // KEYBOARD SHORTCUT: Ctrl+Enter to submit
+    // ========================================
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (customerForm) {
+                // Trigger form validation and submit
+                const submitEvent = new Event('submit');
+                customerForm.dispatchEvent(submitEvent);
+            }
+        }
+    });
+</script>
+{% endblock %}
