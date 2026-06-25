@@ -1843,13 +1843,18 @@ def export_excel_stock():
 
     ws.freeze_panes = "F6"
 
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-
+    downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    file_path = os.path.join(downloads, "Stock_Report.xlsx")
+    
+    wb.save(file_path)
+    
     conn.close()
-
-    return send_file(output, as_attachment=True, download_name="Stock_Report.xlsx")
+    
+    return jsonify({
+        "success": True,
+        "message": "Excel Report Exported Successfully!",
+        "path": file_path
+    })
 
 
 #===============Credit app ==============================================================================================================================================
