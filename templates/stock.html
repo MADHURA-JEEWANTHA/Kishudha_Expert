@@ -675,4 +675,49 @@
         }
     });
 </script>
+<script>
+function exportExcel() {
+
+    fetch('/export_excel_stock')
+    .then(response => response.json())
+    .then(data => {
+
+        if(data.success){
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Export Complete!',
+                html: `
+                    <b>${data.message}</b><br><br>
+                    Saved to:<br>
+                    <small>${data.path}</small>
+                `,
+                confirmButtonText: 'OK'
+            });
+
+        } else {
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Export Failed',
+                text: 'Could not export Excel file'
+            });
+
+        }
+
+    })
+    .catch(error => {
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error
+        });
+
+    });
+
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
