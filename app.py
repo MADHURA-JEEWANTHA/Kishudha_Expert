@@ -3942,28 +3942,30 @@ def export_receivable_report():
         ws.freeze_panes = "A12"
 
         # =====================================================
-        # SAVE FILE
+        # SAVE TO DOWNLOADS
         # =====================================================
-        output = BytesIO()
-
-        wb.save(output)
-
-        output.seek(0)
-
-        conn.close()
-
-        # =====================================================
-        # DOWNLOAD
-        # =====================================================
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name="Accounts_Receivable_Report.xlsx",
-            mimetype=(
-                "application/vnd.openxmlformats-"
-                "officedocument.spreadsheetml.sheet"
-            )
+        downloads = os.path.join(
+            os.path.expanduser("~"),
+            "Downloads"
         )
+        
+        file_path = os.path.join(
+            downloads,
+            "Accounts_Receivable_Report.xlsx"
+        )
+        
+        wb.save(file_path)
+        
+        conn.close()
+        
+        # =====================================================
+        # RETURN SUCCESS
+        # =====================================================
+        return jsonify({
+            "success": True,
+            "message": "Accounts Receivable Report Exported Successfully!",
+            "path": file_path
+        })
 
     except Exception as e:
 
