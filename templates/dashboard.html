@@ -123,9 +123,12 @@
             <a href="{{ url_for('customers') }}" class="btn-outline-custom">
                 <i class="fas fa-users"></i> Customers
             </a>
-            <a href="{{ url_for('export_receivable_report') }}" class="btn-outline-custom">
-                <i class="fas fa-file-excel"></i> Export
-            </a>
+            <button
+                type="button"
+                class="btn btn-success"
+                onclick="exportCreditReport()">
+                <i class="fas fa-file-excel"></i> Export Credit Report
+            </button>
         </div>
     </div>
     
@@ -273,5 +276,41 @@
     </div>
     
 </div>
+
+<script>
+function exportCreditReport() {
+
+    fetch('/export_credit_report')
+    .then(response => response.json())
+    .then(data => {
+
+        if(data.success){
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Export Complete!',
+                html: `
+                    <b>${data.message}</b><br><br>
+                    Saved to:<br>
+                    <small>${data.path}</small>
+                `,
+                confirmButtonText: 'OK'
+            });
+
+        }
+
+    })
+    .catch(error => {
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Export Failed',
+            text: error
+        });
+
+    });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 {% endblock %}
