@@ -28,9 +28,12 @@
             <a href="{{ url_for('multi_stock') }}?name=Balance Stock" class="btn-primary-custom" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
                 <i class="fas fa-balance-scale"></i> Balance
             </a>
-            <a href="{{ url_for('export_excel_stock') }}" class="btn-primary-custom" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </a>
+            <button type="button"
+                    style="background: linear-gradient(135deg, #1e293b, #0f172a);"
+                    class="btn btn-success"
+                    onclick="exportExcel()">
+                Export Excel
+            </button>
         </div>
     </div>
 
